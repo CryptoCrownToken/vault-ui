@@ -60,8 +60,8 @@ export interface DashboardData {
 // Derive PDAs
 export function getStatePDA(): PublicKey {
   const [pda] = PublicKey.findProgramAddressSync(
-    [Buffer.from("state"), RESERVE_MINT.toBuffer(), VAULT_MINT.toBuffer()],
-    PROGRAM_ID
+    [Buffer.from("state"), RESERVE_MINT().toBuffer(), VAULT_MINT().toBuffer()],
+    PROGRAM_ID()
   );
   return pda;
 }
@@ -69,13 +69,13 @@ export function getStatePDA(): PublicKey {
 export function getLoanPDA(user: PublicKey): PublicKey {
   const [pda] = PublicKey.findProgramAddressSync(
     [Buffer.from("loan"), user.toBuffer()],
-    PROGRAM_ID
+    PROGRAM_ID()
   );
   return pda;
 }
 
 export function getVaultReserveAta(): PublicKey {
-  return getAssociatedTokenAddressSync(RESERVE_MINT, getStatePDA(), true);
+  return getAssociatedTokenAddressSync(RESERVE_MINT(), getStatePDA(), true);
 }
 
 // Get program instance
@@ -96,7 +96,7 @@ export async function fetchDashboard(
   const [stateAcc, reserveAcc, mintAcc] = await Promise.all([
     (program.account as any).state.fetch(statePDA) as Promise<ProtocolState>,
     getAccount(connection, vaultReserveAta),
-    getMint(connection, VAULT_MINT),
+    getMint(connection, VAULT_MINT()),
   ]);
 
   const reserveBalance = Number(reserveAcc.amount) / 10 ** RESERVE_DECIMALS;
@@ -112,13 +112,13 @@ export async function fetchDashboard(
 
   if (userPk) {
     try {
-      const userVaultAta = getAssociatedTokenAddressSync(VAULT_MINT, userPk);
+      const userVaultAta = getAssociatedTokenAddressSync(VAULT_MINT(), userPk);
       const acc = await getAccount(connection, userVaultAta);
       userVaultBalance = Number(acc.amount) / 10 ** VAULT_DECIMALS;
     } catch {}
 
     try {
-      const userReserveAta = getAssociatedTokenAddressSync(RESERVE_MINT, userPk);
+      const userReserveAta = getAssociatedTokenAddressSync(RESERVE_MINT(), userPk);
       const acc = await getAccount(connection, userReserveAta);
       userReserveBalance = Number(acc.amount) / 10 ** RESERVE_DECIMALS;
     } catch {}
@@ -153,24 +153,24 @@ export async function burnToRedeem(
 ): Promise<string> {
   const rawAmount = new BN(burnAmount * 10 ** VAULT_DECIMALS);
   const statePDA = getStatePDA();
-  const userVaultAta = getAssociatedTokenAddressSync(VAULT_MINT, userPk);
-  const userReserveAta = getAssociatedTokenAddressSync(RESERVE_MINT, userPk);
+  const userVaultAta = getAssociatedTokenAddressSync(VAULT_MINT(), userPk);
+  const userReserveAta = getAssociatedTokenAddressSync(RESERVE_MINT(), userPk);
 
   // Create ATA for reserve (JitoSOL) if it doesn't exist — idempotent
   const createAtaIx = createAssociatedTokenAccountIdempotentInstruction(
     userPk,          // payer
     userReserveAta,  // ata
     userPk,          // owner
-    RESERVE_MINT     // mint
+    RESERVE_MINT()   // mint
   );
 
   const sig = await program.methods
     .burnToRedeem(rawAmount)
     .accounts({
       state: statePDA,
-      reserveMint: RESERVE_MINT,
+      reserveMint: RESERVE_MINT(),
       vaultReserveAta: getVaultReserveAta(),
-      vaultMint: VAULT_MINT,
+      vaultMint: VAULT_MINT(),
       userVaultAta,
       userReserveAta,
       user: userPk,
@@ -194,23 +194,23 @@ export async function borrow(
   const loanPDA = getLoanPDA(userPk);
   const escrow = Keypair.generate();
 
-  const userVaultAta = getAssociatedTokenAddressSync(VAULT_MINT, userPk);
-  const userReserveAta = getAssociatedTokenAddressSync(RESERVE_MINT, userPk);
+  const userVaultAta = getAssociatedTokenAddressSync(VAULT_MINT(), userPk);
+  const userReserveAta = getAssociatedTokenAddressSync(RESERVE_MINT(), userPk);
 
   // Create ATA for reserve (JitoSOL) if it doesn't exist — idempotent
   const createAtaIx = createAssociatedTokenAccountIdempotentInstruction(
     userPk,          // payer
     userReserveAta,  // ata
     userPk,          // owner
-    RESERVE_MINT     // mint
+    RESERVE_MINT()   // mint
   );
 
   const sig = await program.methods
     .borrow(rawAmount)
     .accounts({
       state: statePDA,
-      reserveMint: RESERVE_MINT,
-      vaultMint: VAULT_MINT,
+      reserveMint: RESERVE_MINT(),
+      vaultMint: VAULT_MINT(),
       vaultReserveAta: getVaultReserveAta(),
       user: userPk,
       userVaultAta,
@@ -236,15 +236,15 @@ export async function repay(
 ): Promise<string> {
   const statePDA = getStatePDA();
   const loanPDA = getLoanPDA(userPk);
-  const userVaultAta = getAssociatedTokenAddressSync(VAULT_MINT, userPk);
-  const userReserveAta = getAssociatedTokenAddressSync(RESERVE_MINT, userPk);
+  const userVaultAta = getAssociatedTokenAddressSync(VAULT_MINT(), userPk);
+  const userReserveAta = getAssociatedTokenAddressSync(RESERVE_MINT(), userPk);
 
   const sig = await program.methods
     .repay()
     .accounts({
       state: statePDA,
-      reserveMint: RESERVE_MINT,
-      vaultMint: VAULT_MINT,
+      reserveMint: RESERVE_MINT(),
+      vaultMint: VAULT_MINT(),
       vaultReserveAta: getVaultReserveAta(),
       user: userPk,
       userVaultAta,
