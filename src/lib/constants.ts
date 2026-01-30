@@ -3,7 +3,7 @@ import { PublicKey } from "@solana/web3.js";
 export const RESERVE_DECIMALS = 9;
 export const VAULT_DECIMALS = 6;
 
-export const SOLANA_RPC = process.env.NEXT_PUBLIC_SOLANA_RPC || "https://api.devnet.solana.com";
+export const SOLANA_RPC = process.env.NEXT_PUBLIC_SOLANA_RPC || "https://devnet.helius-rpc.com/?api-key=c22770b7-7d18-4f70-bc85-f615fe13ade8";
 export const SOLANA_NETWORK = (process.env.NEXT_PUBLIC_SOLANA_NETWORK || "devnet") as "devnet" | "mainnet-beta";
 
 // Lazy singletons — avoids build-time SSR crash
