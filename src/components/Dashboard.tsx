@@ -22,6 +22,7 @@ export default function Dashboard() {
   const [jitosolUsd, setJitosolUsd] = useState<number>(0);
   const [apy, setApy] = useState<number>(0);
   const [loading, setLoading] = useState(true);
+  const [debugErr, setDebugErr] = useState<string>("");
   const [tab, setTab] = useState<"burn" | "borrow" | "repay">("burn");
   const [escrowPk, setEscrowPk] = useState<string | null>(null);
 
@@ -88,8 +89,10 @@ export default function Dashboard() {
         wallet.publicKey || null
       );
       setData(result);
-    } catch (err) {
-      console.error("Fetch error:", err);
+    } catch (err: any) {
+      const msg = err?.message || String(err);
+      console.error("Fetch error:", msg, err);
+      setDebugErr(msg);
     } finally {
       setLoading(false);
     }
@@ -118,6 +121,13 @@ export default function Dashboard() {
       </header>
 
       <main className="max-w-6xl mx-auto px-6 py-8">
+        {/* Debug banner — remove after fixing */}
+        {debugErr && (
+          <div className="bg-red-900/50 border border-red-500 rounded-xl p-4 mb-4 text-red-200 text-sm break-all">
+            <strong>Debug Error:</strong> {debugErr}
+          </div>
+        )}
+
         {/* Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {/* Card 1: Floor Price in $ (big) + floor in JitoSOL (small) */}
