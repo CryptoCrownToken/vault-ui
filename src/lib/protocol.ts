@@ -274,6 +274,32 @@ export async function repay(
   return sig;
 }
 
+export async function depositReserve(
+  program: Program,
+  userPk: PublicKey,
+  jitosolAmount: number
+): Promise<string> {
+  const rawAmount = new BN(Math.floor(jitosolAmount * 10 ** RESERVE_DECIMALS));
+  const statePDA = getStatePDA();
+  const userReserveAta = getAssociatedTokenAddressSync(RESERVE_MINT(), userPk);
+
+  const sig = await program.methods
+    .depositReserve(rawAmount)
+    .accounts({
+      state: statePDA,
+      reserveMint: RESERVE_MINT(),
+      vaultReserveAta: getVaultReserveAta(),
+      user: userPk,
+      userReserveAta,
+      tokenProgram: TOKEN_PROGRAM_ID,
+      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+      systemProgram: SystemProgram.programId,
+    })
+    .rpc();
+
+  return sig;
+}
+
 // Calculate expected output
 export function calculateBurnOutput(
   burnAmount: number,

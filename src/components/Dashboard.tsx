@@ -13,6 +13,7 @@ import { SOLANA_NETWORK } from "@/lib/constants";
 import BurnPanel from "./BurnPanel";
 import BorrowPanel from "./BorrowPanel";
 import RepayPanel from "./RepayPanel";
+import DepositPanel from "./DepositPanel";
 
 export default function Dashboard() {
   const { connection } = useConnection();
@@ -22,7 +23,7 @@ export default function Dashboard() {
   const [jitosolUsd, setJitosolUsd] = useState<number>(0);
   const [apy, setApy] = useState<number>(0);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"burn" | "borrow" | "repay">("burn");
+  const [tab, setTab] = useState<"burn" | "borrow" | "repay" | "deposit">("burn");
 
   // Fetch price
   useEffect(() => {
@@ -139,6 +140,86 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* How It Works */}
+        <div className="mb-8 bg-gradient-to-br from-gray-900 to-gray-900/50 border border-gray-800 rounded-2xl p-6">
+          <h2 className="text-lg font-bold mb-5 flex items-center gap-2">
+            <span className="bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
+              How VAULT Protocol Works
+            </span>
+          </h2>
+          <div className="grid md:grid-cols-3 gap-6">
+            {/* Step 1 */}
+            <div className="relative">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center text-xl shrink-0">
+                  {"\uD83D\uDFE1"}
+                </div>
+                <h3 className="font-semibold text-white">JitoSOL Reserve</h3>
+              </div>
+              <p className="text-gray-400 text-sm leading-relaxed">
+                The protocol holds a reserve of <strong className="text-purple-300">JitoSOL</strong> (liquid
+                staked SOL). This reserve earns staking yield automatically,
+                which means the reserve grows over time &mdash; pushing the
+                floor price up forever.
+              </p>
+            </div>
+
+            {/* Step 2 */}
+            <div className="relative">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-xl bg-cyan-500/20 flex items-center justify-center text-xl shrink-0">
+                  {"\uD83D\uDD12"}
+                </div>
+                <h3 className="font-semibold text-white">Guaranteed Floor</h3>
+              </div>
+              <p className="text-gray-400 text-sm leading-relaxed">
+                Every VAULT token can always be <strong className="text-cyan-300">burned</strong> to
+                redeem its share of the reserve. This creates a
+                guaranteed minimum price that <strong className="text-cyan-300">can only go up</strong>.
+                Floor = Reserve / Circulating Supply.
+              </p>
+            </div>
+
+            {/* Step 3 */}
+            <div className="relative">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-xl shrink-0">
+                  {"\uD83D\uDCB0"}
+                </div>
+                <h3 className="font-semibold text-white">Borrow & Earn</h3>
+              </div>
+              <p className="text-gray-400 text-sm leading-relaxed">
+                Lock your VAULT as collateral to <strong className="text-emerald-300">borrow JitoSOL</strong> at
+                floor price. Repay within 30 days to get your VAULT back.
+                Late repayments incur a small penalty burn, which
+                benefits all remaining holders.
+              </p>
+            </div>
+          </div>
+
+          {/* Key points */}
+          <div className="mt-6 pt-5 border-t border-gray-800">
+            <div className="grid md:grid-cols-4 gap-4 text-center">
+              <div className="bg-gray-800/50 rounded-xl py-3 px-4">
+                <p className="text-xs text-gray-400 mb-1">Floor Price</p>
+                <p className="text-sm font-semibold text-green-400">{"\u2191"} Can only go up</p>
+              </div>
+              <div className="bg-gray-800/50 rounded-xl py-3 px-4">
+                <p className="text-xs text-gray-400 mb-1">Reserve</p>
+                <p className="text-sm font-semibold text-purple-400">100% JitoSOL backed</p>
+              </div>
+              <div className="bg-gray-800/50 rounded-xl py-3 px-4">
+                <p className="text-xs text-gray-400 mb-1">Yield Source</p>
+                <p className="text-sm font-semibold text-cyan-400">Jito staking APY</p>
+              </div>
+              <div className="bg-gray-800/50 rounded-xl py-3 px-4">
+                <p className="text-xs text-gray-400 mb-1">Smart Contract</p>
+                <p className="text-sm font-semibold text-amber-400">Fully on-chain</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* User balances */}
         {wallet.publicKey && data && (
           <div className="grid grid-cols-2 gap-4 mb-8">
@@ -190,7 +271,7 @@ export default function Dashboard() {
         {wallet.publicKey ? (
           <>
             <div className="flex gap-1 mb-6 bg-gray-900 rounded-xl p-1">
-              {(["burn", "borrow", "repay"] as const).map((t) => (
+              {(["burn", "borrow", "repay", "deposit"] as const).map((t) => (
                 <button
                   key={t}
                   onClick={() => setTab(t)}
@@ -200,7 +281,13 @@ export default function Dashboard() {
                       : "text-gray-400 hover:text-white"
                   }`}
                 >
-                  {t === "burn" ? "\uD83D\uDD25 Burn" : t === "borrow" ? "\uD83D\uDCB0 Borrow" : "\u2705 Repay"}
+                  {t === "burn"
+                    ? "\uD83D\uDD25 Burn"
+                    : t === "borrow"
+                    ? "\uD83D\uDCB0 Borrow"
+                    : t === "repay"
+                    ? "\u2705 Repay"
+                    : "\uD83C\uDFE6 Deposit"}
                 </button>
               ))}
             </div>
@@ -222,6 +309,13 @@ export default function Dashboard() {
             {tab === "repay" && data && (
               <RepayPanel
                 data={data}
+                onSuccess={refresh}
+              />
+            )}
+            {tab === "deposit" && data && (
+              <DepositPanel
+                data={data}
+                jitosolUsd={jitosolUsd}
                 onSuccess={refresh}
               />
             )}
