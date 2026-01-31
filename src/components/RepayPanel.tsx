@@ -4,50 +4,31 @@ import { useState } from "react";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { AnchorProvider } from "@coral-xyz/anchor";
 import { PublicKey } from "@solana/web3.js";
-import { repay, getProgram, DashboardData } from "@/lib/protocol";
+import {
+  repay,
+  getProgram,
+  DashboardData,
+  LoanWithKey,
+} from "@/lib/protocol";
 import { solscanTx } from "@/lib/constants";
 
 interface Props {
   data: DashboardData;
-  escrowPk: string | null;
   onSuccess: () => void;
 }
 
-export default function RepayPanel({ data, escrowPk, onSuccess }: Props) {
+export default function RepayPanel({ data, onSuccess }: Props) {
   const { connection } = useConnection();
   const wallet = useWallet();
   const [status, setStatus] = useState<"idle" | "pending" | "success" | "error">("idle");
   const [txSig, setTxSig] = useState("");
   const [error, setError] = useState("");
-  const [manualEscrow, setManualEscrow] = useState("");
+  const [repayingLoanId, setRepayingLoanId] = useState<number | null>(null);
 
-  const loan = data.loan;
-
-  if (!loan) {
-    return (
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
-        <h2 className="text-lg font-semibold mb-4">Repay Loan</h2>
-        <div className="bg-gray-800 rounded-xl p-8 text-center">
-          <p className="text-gray-400 text-lg">No active loan found</p>
-          <p className="text-gray-500 text-sm mt-2">
-            You don&apos;t have any active loan to repay.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  const vaultLocked = Number(loan.vaultLocked) / 10 ** 6;
-  const jitosolToRepay = Number(loan.jitosolBorrowed) / 10 ** 9;
-  const dueDate = new Date(Number(loan.dueTime) * 1000);
-  const isOverdue = dueDate < new Date();
-
-  const handleRepay = async () => {
+  const handleRepay = async (loanEntry: LoanWithKey) => {
     if (!wallet.publicKey || !wallet.signTransaction) return;
-
-    const escrowKey = escrowPk || manualEscrow;
-    if (!escrowKey) {
-      setError("Escrow address required. Enter it below.");
+    if (!loanEntry.escrowPk) {
+      setError("Escrow account not found for this loan.");
       setStatus("error");
       return;
     }
@@ -55,6 +36,7 @@ export default function RepayPanel({ data, escrowPk, onSuccess }: Props) {
     try {
       setStatus("pending");
       setError("");
+      setRepayingLoanId(Number(loanEntry.loan.loanId));
 
       const provider = new AnchorProvider(connection, wallet as any, {
         commitment: "confirmed",
@@ -63,98 +45,114 @@ export default function RepayPanel({ data, escrowPk, onSuccess }: Props) {
       const sig = await repay(
         program,
         wallet.publicKey,
-        new PublicKey(escrowKey)
+        loanEntry.loanPDA,
+        loanEntry.escrowPk
       );
 
       setTxSig(sig);
       setStatus("success");
+      setRepayingLoanId(null);
       onSuccess();
     } catch (err: any) {
       setError(err.message || "Transaction failed");
       setStatus("error");
+      setRepayingLoanId(null);
     }
   };
 
-  return (
-    <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
-      <h2 className="text-lg font-semibold mb-4">Repay Loan</h2>
-
-      {/* Loan details */}
-      <div className="bg-gray-800 rounded-xl p-4 mb-4 space-y-3">
-        <div className="flex justify-between">
-          <span className="text-gray-400">VAULT Locked</span>
-          <span className="font-bold">{vaultLocked.toLocaleString()} VAULT</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-gray-400">JitoSOL to Repay</span>
-          <span className="font-bold">{jitosolToRepay.toFixed(6)} JitoSOL</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-gray-400">Due Date</span>
-          <span className={`font-bold ${isOverdue ? "text-red-400" : "text-green-400"}`}>
-            {dueDate.toLocaleDateString()} {dueDate.toLocaleTimeString()}
-            {isOverdue && " (OVERDUE)"}
-          </span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-gray-400">Your JitoSOL Balance</span>
-          <span className={`font-bold ${data.userReserveBalance < jitosolToRepay ? "text-red-400" : "text-green-400"}`}>
-            {data.userReserveBalance.toFixed(6)} JitoSOL
-          </span>
+  if (data.loans.length === 0) {
+    return (
+      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+        <h2 className="text-lg font-semibold mb-4">Repay Loan</h2>
+        <div className="bg-gray-800 rounded-xl p-4 text-center">
+          <p className="text-gray-400">No active loans to repay.</p>
         </div>
       </div>
+    );
+  }
 
-      {/* Insufficient balance warning */}
-      {data.userReserveBalance < jitosolToRepay && (
-        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 mb-4">
-          <p className="text-red-400 text-sm">
-            Insufficient JitoSOL. You need {jitosolToRepay.toFixed(6)} JitoSOL to repay.
-          </p>
-        </div>
-      )}
-
-      {/* Escrow input if not saved */}
-      {!escrowPk && (
-        <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-3 mb-4">
-          <p className="text-yellow-400 text-sm mb-2">
-            Escrow address not found. Paste the escrow public key from your borrow transaction:
-          </p>
-          <input
-            type="text"
-            value={manualEscrow}
-            onChange={(e) => setManualEscrow(e.target.value)}
-            placeholder="Escrow public key..."
-            className="w-full bg-gray-800 rounded-lg px-3 py-2 text-sm outline-none text-white"
-          />
-        </div>
-      )}
+  return (
+    <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+      <h2 className="text-lg font-semibold mb-4">Repay Loans</h2>
+      <p className="text-gray-400 text-sm mb-6">
+        Repay your JitoSOL to unlock your VAULT tokens from escrow.
+      </p>
 
       {/* Penalty warning */}
-      <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 mb-4 text-sm text-red-300">
+      <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 mb-6 text-sm text-red-300">
         <p>{"\u26A0\uFE0F"} <strong>Warning:</strong> If you do not repay within 30 days, <strong>0.10% of your locked VAULT will be burned</strong> and the loan will be extended by 30 additional days. This penalty repeats every 30 days until repayment.</p>
       </div>
 
-      {/* Repay button */}
-      <button
-        onClick={handleRepay}
-        disabled={
-          status === "pending" ||
-          data.userReserveBalance < jitosolToRepay ||
-          (!escrowPk && !manualEscrow)
-        }
-        className="w-full py-3 rounded-xl font-semibold text-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400"
-      >
-        {status === "pending"
-          ? "Repaying..."
-          : `Repay ${jitosolToRepay.toFixed(6)} JitoSOL`}
-      </button>
+      {/* List of loans */}
+      <div className="space-y-4">
+        {data.loans.map((loanEntry, idx) => {
+          const jitosolToRepay = Number(loanEntry.loan.jitosolBorrowed) / 10 ** 9;
+          const vaultLocked = Number(loanEntry.loan.vaultLocked) / 10 ** 6;
+          const dueDate = new Date(Number(loanEntry.loan.dueTime) * 1000);
+          const isOverdue = dueDate < new Date();
+          const loanId = Number(loanEntry.loan.loanId);
+          const insufficientBalance = data.userReserveBalance < jitosolToRepay;
+
+          return (
+            <div
+              key={idx}
+              className={`border rounded-xl p-4 ${
+                isOverdue
+                  ? "bg-red-500/5 border-red-500/30"
+                  : "bg-gray-800 border-gray-700"
+              }`}
+            >
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="font-semibold text-sm">
+                  {"\u26A1"} Loan #{loanId}
+                  {isOverdue && (
+                    <span className="ml-2 text-red-400 text-xs">(OVERDUE)</span>
+                  )}
+                </h3>
+                <span className="text-xs text-gray-500">
+                  Due: {dueDate.toLocaleDateString()}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 text-sm mb-3">
+                <div>
+                  <p className="text-gray-400 text-xs">VAULT Locked</p>
+                  <p className="font-bold">{vaultLocked.toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400 text-xs">JitoSOL to Repay</p>
+                  <p className="font-bold">{jitosolToRepay.toFixed(6)}</p>
+                </div>
+              </div>
+
+              {insufficientBalance && (
+                <p className="text-red-400 text-xs mb-2">
+                  Insufficient JitoSOL. You need {jitosolToRepay.toFixed(6)} JitoSOL.
+                </p>
+              )}
+
+              <button
+                onClick={() => handleRepay(loanEntry)}
+                disabled={
+                  status === "pending" ||
+                  insufficientBalance ||
+                  !loanEntry.escrowPk
+                }
+                className="w-full py-2 rounded-lg font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400"
+              >
+                {status === "pending" && repayingLoanId === loanId
+                  ? "Repaying..."
+                  : `Repay ${jitosolToRepay.toFixed(6)} JitoSOL`}
+              </button>
+            </div>
+          );
+        })}
+      </div>
 
       {/* Status */}
       {status === "success" && (
         <div className="mt-4 bg-green-500/10 border border-green-500/30 rounded-xl p-3">
-          <p className="text-green-400 text-sm font-medium">
-            Repayment successful! Your {vaultLocked.toLocaleString()} VAULT have been returned.
-          </p>
+          <p className="text-green-400 text-sm font-medium">Repayment successful! VAULT unlocked.</p>
           <a
             href={solscanTx(txSig)}
             target="_blank"

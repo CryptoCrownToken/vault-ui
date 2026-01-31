@@ -23,33 +23,6 @@ export default function Dashboard() {
   const [apy, setApy] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"burn" | "borrow" | "repay">("burn");
-  const [escrowPk, setEscrowPk] = useState<string | null>(null);
-
-  // Load escrow from localStorage
-  useEffect(() => {
-    if (wallet.publicKey) {
-      const saved = localStorage.getItem(`escrow_${wallet.publicKey.toBase58()}`);
-      if (saved) setEscrowPk(saved);
-    }
-  }, [wallet.publicKey]);
-
-  // Save escrow to localStorage
-  const saveEscrow = useCallback(
-    (pk: string) => {
-      if (wallet.publicKey) {
-        localStorage.setItem(`escrow_${wallet.publicKey.toBase58()}`, pk);
-        setEscrowPk(pk);
-      }
-    },
-    [wallet.publicKey]
-  );
-
-  const clearEscrow = useCallback(() => {
-    if (wallet.publicKey) {
-      localStorage.removeItem(`escrow_${wallet.publicKey.toBase58()}`);
-      setEscrowPk(null);
-    }
-  }, [wallet.publicKey]);
 
   // Fetch price
   useEffect(() => {
@@ -66,7 +39,6 @@ export default function Dashboard() {
   const refresh = useCallback(async () => {
     try {
       setLoading(true);
-      // Create a read-only provider if wallet not connected
       const provider = wallet.publicKey && wallet.signTransaction
         ? new AnchorProvider(connection, wallet as any, {
             commitment: "confirmed",
@@ -97,7 +69,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     refresh();
-    const iv = setInterval(refresh, 30_000); // refresh every 30s
+    const iv = setInterval(refresh, 30_000);
     return () => clearInterval(iv);
   }, [refresh]);
 
@@ -120,7 +92,6 @@ export default function Dashboard() {
       <main className="max-w-6xl mx-auto px-6 py-8">
         {/* Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          {/* Card 1: Floor Price in $ (big) + floor in JitoSOL (small) */}
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
             <p className="text-gray-400 text-xs mb-1">Floor Price</p>
             <p className="text-xl font-bold">
@@ -131,7 +102,6 @@ export default function Dashboard() {
             </p>
           </div>
 
-          {/* Card 2: Reserve value in $ (big) + JitoSOL count (small) */}
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
             <p className="text-gray-400 text-xs mb-1">Reserve Value</p>
             <p className="text-xl font-bold">
@@ -144,7 +114,6 @@ export default function Dashboard() {
             </p>
           </div>
 
-          {/* Card 3: Annual Yield = reserve$ × APY */}
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
             <p className="text-gray-400 text-xs mb-1">Annual Yield</p>
             <p className="text-xl font-bold">
@@ -157,7 +126,6 @@ export default function Dashboard() {
             </p>
           </div>
 
-          {/* Card 4: Circulating Supply (big) + locked in loans (small) */}
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
             <p className="text-gray-400 text-xs mb-1">Circulating Supply</p>
             <p className="text-xl font-bold">
@@ -165,7 +133,7 @@ export default function Dashboard() {
             </p>
             <p className="text-gray-500 text-xs mt-1">
               {data
-                ? `🔒 ${formatNum(data.totalLocked)} locked in loans`
+                ? `\uD83D\uDD12 ${formatNum(data.totalLocked)} locked in loans`
                 : "..."}
             </p>
           </div>
@@ -185,30 +153,36 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Active loan */}
-        {wallet.publicKey && data?.loan && (
-          <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-4 mb-6">
-            <h3 className="text-purple-300 font-semibold mb-2">{"\u26A1"} Active Loan</h3>
-            <div className="grid grid-cols-3 gap-4 text-sm">
-              <div>
-                <p className="text-gray-400">VAULT Locked</p>
-                <p className="font-bold">
-                  {formatNum(Number(data.loan.vaultLocked) / 10 ** 6)}
-                </p>
+        {/* Active loans */}
+        {wallet.publicKey && data && data.loans.length > 0 && (
+          <div className="space-y-3 mb-6">
+            {data.loans.map((loanEntry, idx) => (
+              <div key={idx} className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-4">
+                <h3 className="text-purple-300 font-semibold mb-2">
+                  {"\u26A1"} Loan #{Number(loanEntry.loan.loanId)}
+                </h3>
+                <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-400">VAULT Locked</p>
+                    <p className="font-bold">
+                      {formatNum(Number(loanEntry.loan.vaultLocked) / 10 ** 6)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400">JitoSOL Borrowed</p>
+                    <p className="font-bold">
+                      {(Number(loanEntry.loan.jitosolBorrowed) / 10 ** 9).toFixed(4)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400">Due Date</p>
+                    <p className="font-bold">
+                      {new Date(Number(loanEntry.loan.dueTime) * 1000).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <p className="text-gray-400">JitoSOL Borrowed</p>
-                <p className="font-bold">
-                  {(Number(data.loan.jitosolBorrowed) / 10 ** 9).toFixed(4)}
-                </p>
-              </div>
-              <div>
-                <p className="text-gray-400">Due Date</p>
-                <p className="font-bold">
-                  {new Date(Number(data.loan.dueTime) * 1000).toLocaleDateString()}
-                </p>
-              </div>
-            </div>
+            ))}
           </div>
         )}
 
@@ -242,21 +216,13 @@ export default function Dashboard() {
               <BorrowPanel
                 data={data}
                 jitosolUsd={jitosolUsd}
-                onSuccess={(pk) => {
-                  saveEscrow(pk);
-                  refresh();
-                }}
-                hasActiveLoan={!!data.loan}
+                onSuccess={refresh}
               />
             )}
             {tab === "repay" && data && (
               <RepayPanel
                 data={data}
-                escrowPk={data.loanEscrowPk?.toBase58() || escrowPk}
-                onSuccess={() => {
-                  clearEscrow();
-                  refresh();
-                }}
+                onSuccess={refresh}
               />
             )}
           </>

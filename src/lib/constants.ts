@@ -3,8 +3,14 @@ import { PublicKey } from "@solana/web3.js";
 export const RESERVE_DECIMALS = 9;
 export const VAULT_DECIMALS = 6;
 
-export const SOLANA_RPC =
-  "https://devnet.helius-rpc.com/?api-key=c22770b7-7d18-4f70-bc85-f615fe13ade8";
+// RPC proxied through /api/rpc server-side route to hide Helius API key
+// Client builds absolute URL at runtime, server uses Helius directly
+export function getSolanaRpc(): string {
+  if (typeof window !== "undefined") {
+    return `${window.location.origin}/api/rpc`;
+  }
+  return `https://devnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY || ""}`;
+}
 export const SOLANA_NETWORK: "devnet" | "mainnet-beta" = "devnet";
 
 // Hardcoded program addresses — avoids any env-var / SSR issues

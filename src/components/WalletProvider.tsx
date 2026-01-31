@@ -7,12 +7,12 @@ import {
 } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import { PhantomWalletAdapter } from "@solana/wallet-adapter-wallets";
-import { SOLANA_RPC } from "@/lib/constants";
+import { getSolanaRpc } from "@/lib/constants";
 
 import "@solana/wallet-adapter-react-ui/styles.css";
 
 export default function WalletProvider({ children }: { children: ReactNode }) {
-  const endpoint = SOLANA_RPC;
+  const endpoint = useMemo(() => getSolanaRpc(), []);
   const wallets = useMemo(() => [new PhantomWalletAdapter()], []);
 
   return (

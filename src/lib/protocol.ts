@@ -5,7 +5,6 @@ import {
   SystemProgram,
   SYSVAR_RENT_PUBKEY,
   Connection,
-  Transaction,
 } from "@solana/web3.js";
 import {
   TOKEN_PROGRAM_ID,
@@ -31,18 +30,27 @@ export interface ProtocolState {
   reserveDecimals: number;
   vaultDecimals: number;
   bump: number;
+  admin: PublicKey;
   loanDuration: BN;
   penaltyRate: number;
   totalLockedVault: BN;
+  loanCount: BN;
 }
 
 export interface LoanData {
   borrower: PublicKey;
+  loanId: BN;
   vaultLocked: BN;
   jitosolBorrowed: BN;
   startTime: BN;
   dueTime: BN;
   bump: number;
+}
+
+export interface LoanWithKey {
+  loan: LoanData;
+  loanPDA: PublicKey;
+  escrowPk: PublicKey | null;
 }
 
 export interface DashboardData {
@@ -53,8 +61,8 @@ export interface DashboardData {
   floorPriceJitosol: number;
   userVaultBalance: number;
   userReserveBalance: number;
-  loan: LoanData | null;
-  loanEscrowPk: PublicKey | null;
+  loans: LoanWithKey[];
+  loanCount: number;
 }
 
 // Derive PDAs
@@ -66,9 +74,11 @@ export function getStatePDA(): PublicKey {
   return pda;
 }
 
-export function getLoanPDA(user: PublicKey): PublicKey {
+export function getLoanPDA(user: PublicKey, loanId: number): PublicKey {
+  const loanIdBuf = Buffer.alloc(8);
+  loanIdBuf.writeBigUInt64LE(BigInt(loanId));
   const [pda] = PublicKey.findProgramAddressSync(
-    [Buffer.from("loan"), user.toBuffer()],
+    [Buffer.from("loan"), user.toBuffer(), loanIdBuf],
     PROGRAM_ID()
   );
   return pda;
@@ -104,11 +114,11 @@ export async function fetchDashboard(
   const totalLocked = Number(stateAcc.totalLockedVault) / 10 ** VAULT_DECIMALS;
   const circulatingSupply = totalSupply - totalLocked;
   const floorPriceJitosol = circulatingSupply > 0 ? reserveBalance / circulatingSupply : 0;
+  const loanCount = Number(stateAcc.loanCount);
 
   let userVaultBalance = 0;
   let userReserveBalance = 0;
-  let loan: LoanData | null = null;
-  let loanEscrowPk: PublicKey | null = null;
+  const loans: LoanWithKey[] = [];
 
   if (userPk) {
     try {
@@ -123,22 +133,30 @@ export async function fetchDashboard(
       userReserveBalance = Number(acc.amount) / 10 ** RESERVE_DECIMALS;
     } catch {}
 
-    try {
-      const loanPDA = getLoanPDA(userPk);
-      loan = (await (program.account as any).loan.fetch(loanPDA)) as unknown as LoanData;
+    // Scan all possible loan PDAs for this user
+    for (let i = 0; i < loanCount; i++) {
+      try {
+        const loanPDA = getLoanPDA(userPk, i);
+        const loanData = (await (program.account as any).loan.fetch(loanPDA)) as unknown as LoanData;
 
-      // Auto-discover escrow: find token accounts owned by the loan PDA
-      if (loan) {
-        try {
-          const escrowAccounts = await connection.getTokenAccountsByOwner(loanPDA, {
-            mint: VAULT_MINT(),
-          });
-          if (escrowAccounts.value.length > 0) {
-            loanEscrowPk = escrowAccounts.value[0].pubkey;
-          }
-        } catch {}
+        if (loanData && loanData.borrower.equals(userPk)) {
+          // Auto-discover escrow
+          let escrowPk: PublicKey | null = null;
+          try {
+            const escrowAccounts = await connection.getTokenAccountsByOwner(loanPDA, {
+              mint: VAULT_MINT(),
+            });
+            if (escrowAccounts.value.length > 0) {
+              escrowPk = escrowAccounts.value[0].pubkey;
+            }
+          } catch {}
+
+          loans.push({ loan: loanData, loanPDA, escrowPk });
+        }
+      } catch {
+        // Loan closed (repaid) — skip
       }
-    } catch {}
+    }
   }
 
   return {
@@ -149,8 +167,8 @@ export async function fetchDashboard(
     floorPriceJitosol,
     userVaultBalance,
     userReserveBalance,
-    loan,
-    loanEscrowPk,
+    loans,
+    loanCount,
   };
 }
 
@@ -168,14 +186,6 @@ export async function burnToRedeem(
   const userVaultAta = getAssociatedTokenAddressSync(VAULT_MINT(), userPk);
   const userReserveAta = getAssociatedTokenAddressSync(RESERVE_MINT(), userPk);
 
-  // Create ATA for reserve (JitoSOL) if it doesn't exist — idempotent
-  const createAtaIx = createAssociatedTokenAccountIdempotentInstruction(
-    userPk,          // payer
-    userReserveAta,  // ata
-    userPk,          // owner
-    RESERVE_MINT()   // mint
-  );
-
   const sig = await program.methods
     .burnToRedeem(rawAmount)
     .accounts({
@@ -189,8 +199,8 @@ export async function burnToRedeem(
       tokenProgram: TOKEN_PROGRAM_ID,
       associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       systemProgram: SystemProgram.programId,
+      rent: SYSVAR_RENT_PUBKEY,
     })
-    .preInstructions([createAtaIx])
     .rpc();
 
   return sig;
@@ -199,23 +209,16 @@ export async function burnToRedeem(
 export async function borrow(
   program: Program,
   userPk: PublicKey,
-  vaultAmount: number
+  vaultAmount: number,
+  currentLoanCount: number
 ): Promise<{ sig: string; escrowPk: PublicKey }> {
   const rawAmount = new BN(vaultAmount * 10 ** VAULT_DECIMALS);
   const statePDA = getStatePDA();
-  const loanPDA = getLoanPDA(userPk);
+  const loanPDA = getLoanPDA(userPk, currentLoanCount);
   const escrow = Keypair.generate();
 
   const userVaultAta = getAssociatedTokenAddressSync(VAULT_MINT(), userPk);
   const userReserveAta = getAssociatedTokenAddressSync(RESERVE_MINT(), userPk);
-
-  // Create ATA for reserve (JitoSOL) if it doesn't exist — idempotent
-  const createAtaIx = createAssociatedTokenAccountIdempotentInstruction(
-    userPk,          // payer
-    userReserveAta,  // ata
-    userPk,          // owner
-    RESERVE_MINT()   // mint
-  );
 
   const sig = await program.methods
     .borrow(rawAmount)
@@ -234,7 +237,6 @@ export async function borrow(
       systemProgram: SystemProgram.programId,
       rent: SYSVAR_RENT_PUBKEY,
     })
-    .preInstructions([createAtaIx])
     .signers([escrow])
     .rpc();
 
@@ -244,10 +246,10 @@ export async function borrow(
 export async function repay(
   program: Program,
   userPk: PublicKey,
+  loanPDA: PublicKey,
   escrowPk: PublicKey
 ): Promise<string> {
   const statePDA = getStatePDA();
-  const loanPDA = getLoanPDA(userPk);
   const userVaultAta = getAssociatedTokenAddressSync(VAULT_MINT(), userPk);
   const userReserveAta = getAssociatedTokenAddressSync(RESERVE_MINT(), userPk);
 

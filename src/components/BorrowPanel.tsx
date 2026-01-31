@@ -14,15 +14,13 @@ import { solscanTx } from "@/lib/constants";
 interface Props {
   data: DashboardData;
   jitosolUsd: number;
-  onSuccess: (escrowPk: string) => void;
-  hasActiveLoan: boolean;
+  onSuccess: () => void;
 }
 
 export default function BorrowPanel({
   data,
   jitosolUsd,
   onSuccess,
-  hasActiveLoan,
 }: Props) {
   const { connection } = useConnection();
   const wallet = useWallet();
@@ -50,30 +48,17 @@ export default function BorrowPanel({
         commitment: "confirmed",
       });
       const program = getProgram(provider);
-      const { sig, escrowPk } = await borrow(program, wallet.publicKey, numAmount);
+      const { sig } = await borrow(program, wallet.publicKey, numAmount, data.loanCount);
 
       setTxSig(sig);
       setStatus("success");
       setAmount("");
-      onSuccess(escrowPk.toBase58());
+      onSuccess();
     } catch (err: any) {
       setError(err.message || "Transaction failed");
       setStatus("error");
     }
   };
-
-  if (hasActiveLoan) {
-    return (
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
-        <h2 className="text-lg font-semibold mb-4">Borrow JitoSOL</h2>
-        <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl p-4">
-          <p className="text-orange-400">
-            You already have an active loan. Repay it first before creating a new one.
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
@@ -133,11 +118,11 @@ export default function BorrowPanel({
 
       {/* Info */}
       <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 mb-4 text-sm text-blue-300">
-        <p>&#128197; Loan duration: <strong>30 days</strong></p>
-        <p>&#128274; Your VAULT is safe in escrow and returned on repay</p>
+        <p>{"\uD83D\uDCC5"} Loan duration: <strong>30 days</strong></p>
+        <p>{"\uD83D\uDD12"} Your VAULT is safe in escrow and returned on repay</p>
       </div>
       <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 mb-6 text-sm text-red-300">
-        <p>&#9888;&#65039; <strong>Warning:</strong> If you do not repay within 30 days, <strong>0.10% of your locked VAULT will be burned</strong> and the loan will be extended by 30 additional days. This penalty repeats every 30 days until repayment.</p>
+        <p>{"\u26A0\uFE0F"} <strong>Warning:</strong> If you do not repay within 30 days, <strong>0.10% of your locked VAULT will be burned</strong> and the loan will be extended by 30 additional days. This penalty repeats every 30 days until repayment.</p>
       </div>
 
       {/* Button */}
