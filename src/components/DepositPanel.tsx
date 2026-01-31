@@ -126,23 +126,28 @@ export default function DepositPanel({ data, jitosolUsd, onSuccess }: Props) {
       </div>
 
       {/* Impact preview */}
-      {numAmount > 0 && data.circulatingSupply > 0 && (
-        <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-3 mb-6 text-sm text-green-300">
-          <p className="font-semibold mb-1">{"\u2728"} Impact Preview</p>
-          <p>
-            New floor price:{" "}
-            <strong>
-              {((data.reserveBalance + numAmount) / data.circulatingSupply).toFixed(10)} JitoSOL
-            </strong>
-          </p>
-          <p>
-            Floor price increase:{" "}
-            <strong>
-              +{((numAmount / (data.reserveBalance || 1)) * 100).toFixed(4)}%
-            </strong>
-          </p>
-        </div>
-      )}
+      {numAmount > 0 && data.circulatingSupply > 0 && (() => {
+        const newFloorJitosol = (data.reserveBalance + numAmount) / data.circulatingSupply;
+        const newFloorUsd = newFloorJitosol * jitosolUsd;
+        return (
+          <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-3 mb-6 text-sm text-green-300">
+            <p className="font-semibold mb-1">{"\u2728"} Impact Preview</p>
+            <p>
+              New floor price:{" "}
+              <strong>{newFloorJitosol.toFixed(10)} JitoSOL</strong>
+              {newFloorUsd > 0 && (
+                <span className="text-green-400/70"> ({"\u2248"} ${newFloorUsd.toFixed(6)})</span>
+              )}
+            </p>
+            <p>
+              Floor price increase:{" "}
+              <strong>
+                +{((numAmount / (data.reserveBalance || 1)) * 100).toFixed(4)}%
+              </strong>
+            </p>
+          </div>
+        );
+      })()}
 
       {/* Button */}
       <button
