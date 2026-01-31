@@ -76,7 +76,8 @@ export function getStatePDA(): PublicKey {
 
 export function getLoanPDA(user: PublicKey, loanId: number): PublicKey {
   const loanIdBuf = Buffer.alloc(8);
-  loanIdBuf.writeBigUInt64LE(BigInt(loanId));
+  const bn = new BN(loanId);
+  loanIdBuf.set(bn.toArrayLike(Buffer, "le", 8));
   const [pda] = PublicKey.findProgramAddressSync(
     [Buffer.from("loan"), user.toBuffer(), loanIdBuf],
     PROGRAM_ID()
