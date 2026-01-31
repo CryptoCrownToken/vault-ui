@@ -1,5 +1,5 @@
 {
-  "address": "9sX23pBwJg5Sqc5ta4RqpaBa1yvofnXE5p8VfAqV6PJ3",
+  "address": "F5Nb3nJVNWcU3DsoKkvFj1MdjjR4wXdHHW8KYJWNjqEE",
   "metadata": {
     "name": "vault_protocol_v2",
     "version": "0.1.0",
@@ -10,7 +10,8 @@
     {
       "name": "borrow",
       "docs": [
-        "Borrow: lock VAULT → reçoit pro-rata JitoSOL (réversible)"
+        "Borrow: lock VAULT → reçoit pro-rata JitoSOL (réversible)",
+        "Supporte plusieurs loans par utilisateur via loan_id"
       ],
       "discriminator": [
         228,
@@ -356,6 +357,11 @@
               {
                 "kind": "account",
                 "path": "user"
+              },
+              {
+                "kind": "account",
+                "path": "state.loan_count",
+                "account": "State"
               }
             ]
           }
@@ -733,6 +739,10 @@
         {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
         }
       ],
       "args": [
@@ -1226,7 +1236,13 @@
               },
               {
                 "kind": "account",
-                "path": "borrower"
+                "path": "loan.borrower",
+                "account": "Loan"
+              },
+              {
+                "kind": "account",
+                "path": "loan.loan_id",
+                "account": "Loan"
               }
             ]
           }
@@ -1602,7 +1618,13 @@
               },
               {
                 "kind": "account",
-                "path": "user"
+                "path": "loan.borrower",
+                "account": "Loan"
+              },
+              {
+                "kind": "account",
+                "path": "loan.loan_id",
+                "account": "Loan"
               }
             ]
           }
@@ -1627,6 +1649,70 @@
         }
       ],
       "args": []
+    },
+    {
+      "name": "update_params",
+      "docs": [
+        "Admin: update loan parameters"
+      ],
+      "discriminator": [
+        108,
+        178,
+        190,
+        95,
+        94,
+        203,
+        116,
+        20
+      ],
+      "accounts": [
+        {
+          "name": "state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "state.reserve_mint",
+                "account": "State"
+              },
+              {
+                "kind": "account",
+                "path": "state.vault_mint",
+                "account": "State"
+              }
+            ]
+          }
+        },
+        {
+          "name": "admin",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "new_loan_duration",
+          "type": {
+            "option": "i64"
+          }
+        },
+        {
+          "name": "new_penalty_rate",
+          "type": {
+            "option": "u16"
+          }
+        }
+      ]
     }
   ],
   "accounts": [
@@ -1753,6 +1839,11 @@
       "code": 6010,
       "name": "InvalidEscrow",
       "msg": "Invalid escrow account"
+    },
+    {
+      "code": 6011,
+      "name": "NotAdmin",
+      "msg": "Not the admin"
     }
   ],
   "types": [
@@ -1764,6 +1855,10 @@
           {
             "name": "borrower",
             "type": "pubkey"
+          },
+          {
+            "name": "loan_id",
+            "type": "u64"
           },
           {
             "name": "vault_locked",
@@ -1798,6 +1893,10 @@
             "type": "pubkey"
           },
           {
+            "name": "loan_id",
+            "type": "u64"
+          },
+          {
             "name": "vault_locked",
             "type": "u64"
           },
@@ -1822,6 +1921,10 @@
             "type": "pubkey"
           },
           {
+            "name": "loan_id",
+            "type": "u64"
+          },
+          {
             "name": "penalty_burned",
             "type": "u64"
           },
@@ -1840,6 +1943,10 @@
           {
             "name": "borrower",
             "type": "pubkey"
+          },
+          {
+            "name": "loan_id",
+            "type": "u64"
           },
           {
             "name": "vault_returned",
@@ -1874,6 +1981,10 @@
             "type": "u8"
           },
           {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
             "name": "loan_duration",
             "type": "i64"
           },
@@ -1883,6 +1994,10 @@
           },
           {
             "name": "total_locked_vault",
+            "type": "u64"
+          },
+          {
+            "name": "loan_count",
             "type": "u64"
           }
         ]

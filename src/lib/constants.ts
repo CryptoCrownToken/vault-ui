@@ -14,7 +14,7 @@ export function getSolanaRpc(): string {
 export const SOLANA_NETWORK: "devnet" | "mainnet-beta" = "devnet";
 
 // Hardcoded program addresses — avoids any env-var / SSR issues
-const PROGRAM_ID_STR = "9sX23pBwJg5Sqc5ta4RqpaBa1yvofnXE5p8VfAqV6PJ3";
+const PROGRAM_ID_STR = "F5Nb3nJVNWcU3DsoKkvFj1MdjjR4wXdHHW8KYJWNjqEE";
 const RESERVE_MINT_STR = "FQ7AZorgJoQDWBNSx5Lv5ijwpYoUXeQA4dLFvhQPngMi";
 const VAULT_MINT_STR = "7yMZLGJQuWeRcqW9apA3AyBLMnH6pn7qyEm5wPtkoo3V";
 
