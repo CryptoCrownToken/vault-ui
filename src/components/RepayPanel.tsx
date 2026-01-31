@@ -129,6 +129,11 @@ export default function RepayPanel({ data, escrowPk, onSuccess }: Props) {
         </div>
       )}
 
+      {/* Penalty warning */}
+      <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 mb-4 text-sm text-red-300">
+        <p>{"\u26A0\uFE0F"} <strong>Warning:</strong> If you do not repay within 30 days, <strong>0.10% of your locked VAULT will be burned</strong> and the loan will be extended by 30 additional days. This penalty repeats every 30 days until repayment.</p>
+      </div>
+
       {/* Repay button */}
       <button
         onClick={handleRepay}
