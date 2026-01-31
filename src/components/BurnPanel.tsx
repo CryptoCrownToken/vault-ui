@@ -32,6 +32,7 @@ export default function BurnPanel({ data, jitosolUsd, onSuccess }: Props) {
     data.circulatingSupply
   );
   const expectedUsd = expectedJitosol * jitosolUsd;
+  const floorPriceUsd = data.floorPriceJitosol * jitosolUsd;
 
   const handleBurn = async () => {
     if (!wallet.publicKey || !wallet.signTransaction || numAmount <= 0) return;
@@ -59,10 +60,36 @@ export default function BurnPanel({ data, jitosolUsd, onSuccess }: Props) {
   return (
     <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
       <h2 className="text-lg font-semibold mb-4">Burn VAULT &rarr; Redeem JitoSOL</h2>
-      <p className="text-gray-400 text-sm mb-6">
+      <p className="text-gray-400 text-sm mb-4">
         Burn your VAULT tokens to receive JitoSOL at the guaranteed floor price.
-        Burned tokens are permanently destroyed.
+        Burned tokens are permanently destroyed, reducing supply and increasing the floor for everyone.
       </p>
+
+      {/* Floor price card */}
+      <div className="bg-gray-800/60 border border-gray-700/50 rounded-xl p-4 mb-5">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-gray-400 text-sm font-medium">Guaranteed Floor Price</span>
+          <span className="text-lg font-bold text-white">
+            {floorPriceUsd > 0 ? `$${floorPriceUsd.toFixed(6)}` : "..."}
+          </span>
+        </div>
+        <p className="text-gray-500 text-xs mb-3">
+          {data.floorPriceJitosol > 0 ? `${data.floorPriceJitosol.toFixed(10)} JitoSOL per VAULT` : "..."}
+        </p>
+
+        {/* Arbitrage explanation */}
+        <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3">
+          <p className="text-emerald-300 text-xs font-semibold mb-1">
+            {"\uD83D\uDCA1"} Arbitrage Opportunity
+          </p>
+          <p className="text-emerald-200/70 text-xs leading-relaxed">
+            If VAULT trades <strong>below</strong> this floor price on the market, you can <strong>buy cheap VAULT
+            and burn it here</strong> to receive more JitoSOL than what you paid &mdash; guaranteed profit.
+            This arbitrage mechanism is what enforces the floor price: it will always be profitable
+            to buy and burn until market price meets the floor.
+          </p>
+        </div>
+      </div>
 
       {/* Input */}
       <div className="bg-gray-800 rounded-xl p-4 mb-4">
@@ -97,7 +124,7 @@ export default function BurnPanel({ data, jitosolUsd, onSuccess }: Props) {
       </div>
 
       {/* Output */}
-      <div className="bg-gray-800 rounded-xl p-4 mb-6">
+      <div className="bg-gray-800 rounded-xl p-4 mb-4">
         <div className="flex justify-between items-center mb-2">
           <span className="text-gray-400 text-sm">You receive</span>
         </div>
@@ -111,6 +138,25 @@ export default function BurnPanel({ data, jitosolUsd, onSuccess }: Props) {
           <p className="text-gray-500 text-sm mt-1">&asymp; ${expectedUsd.toFixed(4)}</p>
         )}
       </div>
+
+      {/* Impact info */}
+      {numAmount > 0 && data.circulatingSupply > 0 && (
+        <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-3 mb-4 text-xs text-cyan-300">
+          <p className="font-semibold mb-1">{"\u2728"} After this burn</p>
+          <p>
+            New floor price:{" "}
+            <strong>
+              {(
+                (data.reserveBalance - expectedJitosol) /
+                (data.circulatingSupply - numAmount)
+              ).toFixed(10)}{" "}
+              JitoSOL
+            </strong>{" "}
+            (unchanged &mdash; burning is proportional)
+          </p>
+          <p>New circulating supply: <strong>{(data.circulatingSupply - numAmount).toLocaleString()} VAULT</strong></p>
+        </div>
+      )}
 
       {/* Button */}
       <button
