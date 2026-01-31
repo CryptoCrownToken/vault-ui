@@ -153,6 +153,7 @@ export default function BorrowPanel({
         <p>{"\uD83D\uDCC5"} Loan duration: <strong>30 days</strong></p>
         <p>{"\uD83D\uDD12"} Your VAULT is safe in escrow and returned on repay</p>
         <p>{"\uD83D\uDCB0"} You repay the same JitoSOL amount to unlock your VAULT</p>
+        <p>{"\u2699\uFE0F"} A one-time fee of <strong>~0.00349 SOL</strong> is charged to open the escrow account &mdash; it is <strong>refunded automatically</strong> when you repay the loan</p>
       </div>
       <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 mb-6 text-sm text-red-300">
         <p>{"\u26A0\uFE0F"} <strong>Warning:</strong> If you do not repay within 30 days, <strong>0.10% of your locked VAULT will be burned</strong> and the loan will be extended by 30 additional days. This penalty repeats every 30 days until repayment.</p>
