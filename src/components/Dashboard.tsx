@@ -252,7 +252,7 @@ export default function Dashboard() {
             {tab === "repay" && data && (
               <RepayPanel
                 data={data}
-                escrowPk={escrowPk}
+                escrowPk={data.loanEscrowPk?.toBase58() || escrowPk}
                 onSuccess={() => {
                   clearEscrow();
                   refresh();

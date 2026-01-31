@@ -126,6 +126,18 @@ export async function fetchDashboard(
     try {
       const loanPDA = getLoanPDA(userPk);
       loan = (await (program.account as any).loan.fetch(loanPDA)) as unknown as LoanData;
+
+      // Auto-discover escrow: find token accounts owned by the loan PDA
+      if (loan) {
+        try {
+          const escrowAccounts = await connection.getTokenAccountsByOwner(loanPDA, {
+            mint: VAULT_MINT(),
+          });
+          if (escrowAccounts.value.length > 0) {
+            loanEscrowPk = escrowAccounts.value[0].pubkey;
+          }
+        } catch {}
+      }
     } catch {}
   }
 
