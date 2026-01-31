@@ -81,7 +81,7 @@ export default function Dashboard() {
       {/* Header */}
       <header className="border-b border-gray-800 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-cyan-400 rounded-lg" />
+          <img src="/vault-logo.svg" alt="VAULT" className="w-8 h-8 rounded-lg" />
           <h1 className="text-xl font-bold">VAULT Protocol</h1>
           <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full">
             {SOLANA_NETWORK}
