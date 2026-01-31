@@ -161,7 +161,7 @@ export default function Dashboard() {
               <p className="text-gray-400 text-sm leading-relaxed">
                 The protocol holds a reserve of <strong className="text-purple-300">JitoSOL</strong> (liquid
                 staked SOL). This reserve earns staking yield automatically,
-                which means the reserve grows over time &mdash; pushing the
+                which means the reserve grows over time, pushing the
                 floor price up forever.
               </p>
             </div>
@@ -178,7 +178,7 @@ export default function Dashboard() {
                 Any VAULT can be <strong className="text-cyan-300">burned</strong> to
                 redeem its share of the reserve at the <strong className="text-cyan-300">floor price</strong>.
                 If VAULT trades below the floor on the market, anyone can buy cheap and burn for
-                profit &mdash; this arbitrage <strong className="text-cyan-300">enforces the minimum price</strong>.
+                profit - this arbitrage <strong className="text-cyan-300">enforces the minimum price</strong>.
               </p>
             </div>
 
@@ -193,7 +193,7 @@ export default function Dashboard() {
               <p className="text-gray-400 text-sm leading-relaxed">
                 Lock VAULT to <strong className="text-emerald-300">borrow JitoSOL</strong> at
                 floor price. Since VAULT trades at or above the floor,
-                your collateral is always worth <strong className="text-emerald-300">more than the loan</strong> &mdash;
+                your collateral is always worth <strong className="text-emerald-300">more than the loan</strong>, so
                 every loan is naturally overcollateralized.
               </p>
             </div>
@@ -357,7 +357,7 @@ export default function Dashboard() {
 
       {/* Footer */}
       <footer className="border-t border-gray-800 px-6 py-4 text-center text-gray-500 text-sm">
-        VAULT Protocol v2 &mdash; {SOLANA_NETWORK} &mdash; Floor price guaranteed by JitoSOL reserves
+        VAULT Protocol v2 | {SOLANA_NETWORK} | Floor price guaranteed by JitoSOL reserves
       </footer>
     </div>
   );

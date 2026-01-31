@@ -84,7 +84,7 @@ export default function BurnPanel({ data, jitosolUsd, onSuccess }: Props) {
           </p>
           <p className="text-emerald-200/70 text-xs leading-relaxed">
             If VAULT trades <strong>below</strong> this floor price on the market, you can <strong>buy cheap VAULT
-            and burn it here</strong> to receive more JitoSOL than what you paid &mdash; guaranteed profit.
+            and burn it here</strong> to receive more JitoSOL than what you paid - guaranteed profit.
             This arbitrage mechanism is what enforces the floor price: it will always be profitable
             to buy and burn until market price meets the floor.
           </p>
@@ -152,7 +152,7 @@ export default function BurnPanel({ data, jitosolUsd, onSuccess }: Props) {
               ).toFixed(10)}{" "}
               JitoSOL
             </strong>{" "}
-            (unchanged &mdash; burning is proportional)
+            (unchanged - burning is proportional)
           </p>
           <p>New circulating supply: <strong>{(data.circulatingSupply - numAmount).toLocaleString()} VAULT</strong></p>
         </div>
