@@ -162,6 +162,11 @@ export default function Dashboard() {
               <div className="bg-black p-5 text-center">
                 <p className="text-neutral-500 text-xs uppercase tracking-wider mb-1">Your Vault Available</p>
                 <p className="text-2xl font-bold">{formatNum(data.userVaultBalance)}</p>
+                {data.circulatingSupply > 0 && (
+                  <p className="text-neutral-600 text-xs mt-1">
+                    {((data.userVaultBalance / (data.circulatingSupply + data.totalLocked)) * 100).toFixed(2)}% of supply
+                  </p>
+                )}
               </div>
               <div className="bg-black p-5 text-center">
                 <p className="text-neutral-500 text-xs uppercase tracking-wider mb-1">Your Vault Floor Value</p>
