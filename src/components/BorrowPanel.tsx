@@ -73,28 +73,14 @@ export default function BorrowPanel({
       {/* Overcollateralization explanation */}
       <div className="bg-gray-800/60 border border-gray-700/50 rounded-xl p-4 mb-5">
         <p className="text-purple-300 text-xs font-semibold mb-2">
-          {"\uD83D\uDEE1\uFE0F"} Always Overcollateralized
+          {"\uD83D\uDEE1\uFE0F"} Zero Interest, Always Overcollateralized
         </p>
-        <p className="text-gray-400 text-xs leading-relaxed mb-3">
-          Since VAULT always trades <strong className="text-white">at or above</strong> the floor price on the market,
-          your locked VAULT is always worth <strong className="text-white">more</strong> than the JitoSOL you borrow.
-          The loan is valued at the floor price, but your collateral has market value - making every
-          loan naturally overcollateralized.
+        <p className="text-gray-400 text-xs leading-relaxed">
+          Borrow JitoSOL at floor price with <strong className="text-white">no interest</strong>.
+          Use it to earn yield elsewhere, then repay to unlock your VAULT.
+          Since VAULT always trades at or above the floor, your collateral is always worth
+          more than the loan.
         </p>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-gray-900/60 rounded-lg p-2.5 text-center">
-            <p className="text-gray-500 text-[10px] mb-0.5">You borrow at</p>
-            <p className="text-sm font-bold text-cyan-400">Floor Price</p>
-            <p className="text-gray-500 text-[10px]">
-              {floorPriceUsd > 0 ? `$${floorPriceUsd.toFixed(6)}/VAULT` : "..."}
-            </p>
-          </div>
-          <div className="bg-gray-900/60 rounded-lg p-2.5 text-center">
-            <p className="text-gray-500 text-[10px] mb-0.5">Collateral worth</p>
-            <p className="text-sm font-bold text-green-400">{"\u2265"} Market Price</p>
-            <p className="text-gray-500 text-[10px]">Always {"\u2265"} floor</p>
-          </div>
-        </div>
       </div>
 
       {/* Input */}

@@ -148,8 +148,7 @@ export default function Dashboard() {
             </span>
           </h2>
 
-          {/* Core mechanics - 3 columns */}
-          <div className="grid md:grid-cols-3 gap-6 mb-6">
+          <div className="grid md:grid-cols-3 gap-6">
             {/* Step 1 */}
             <div className="relative">
               <div className="flex items-center gap-3 mb-3">
@@ -159,10 +158,10 @@ export default function Dashboard() {
                 <h3 className="font-semibold text-white">JitoSOL Reserve</h3>
               </div>
               <p className="text-gray-400 text-sm leading-relaxed">
-                The protocol holds a reserve of <strong className="text-purple-300">JitoSOL</strong> (liquid
-                staked SOL). This reserve earns staking yield automatically,
-                which means the reserve grows over time, pushing the
-                floor price up forever.
+                The protocol holds a shared reserve of <strong className="text-purple-300">JitoSOL</strong> (liquid staked SOL).
+                Every VAULT holder owns a proportional share of this reserve. If you hold 5% of the supply, you own 5% of the reserve.
+                The reserve grows over time thanks to <strong className="text-purple-300">trading fees</strong> used to buy JitoSOL
+                and the <strong className="text-purple-300">built-in staking yield</strong> of JitoSOL itself.
               </p>
             </div>
 
@@ -188,59 +187,14 @@ export default function Dashboard() {
                 <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-xl shrink-0">
                   {"\uD83D\uDCB0"}
                 </div>
-                <h3 className="font-semibold text-white">Borrow (Overcollateralized)</h3>
+                <h3 className="font-semibold text-white">Interest-Free Loans</h3>
               </div>
               <p className="text-gray-400 text-sm leading-relaxed">
-                Lock VAULT to <strong className="text-emerald-300">borrow JitoSOL</strong> at
-                floor price. Since VAULT trades at or above the floor,
-                your collateral is always worth <strong className="text-emerald-300">more than the loan</strong>, so
-                every loan is naturally overcollateralized.
+                Lock your VAULT to <strong className="text-emerald-300">borrow JitoSOL at floor price</strong> with
+                zero interest. Use the borrowed JitoSOL to earn yield elsewhere, then repay to
+                get your VAULT back. Since VAULT always trades at or above the floor, your collateral
+                is always worth <strong className="text-emerald-300">more than the loan</strong>.
               </p>
-            </div>
-          </div>
-
-          {/* Economics flywheel */}
-          <div className="bg-gray-800/40 rounded-xl p-4 mb-6">
-            <h3 className="text-sm font-semibold text-white mb-3">{"\uD83D\uDD04"} The VAULT Flywheel</h3>
-            <div className="grid md:grid-cols-4 gap-3 text-xs">
-              <div className="flex items-start gap-2">
-                <span className="text-purple-400 font-bold mt-0.5">1.</span>
-                <p className="text-gray-400">JitoSOL reserve earns <strong className="text-purple-300">staking yield</strong> passively, growing the reserve over time</p>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="text-cyan-400 font-bold mt-0.5">2.</span>
-                <p className="text-gray-400">Floor price <strong className="text-cyan-300">rises</strong> as reserve grows and tokens get burned</p>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="text-emerald-400 font-bold mt-0.5">3.</span>
-                <p className="text-gray-400">Late loan penalties <strong className="text-emerald-300">burn VAULT</strong>, reducing supply and boosting floor further</p>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="text-amber-400 font-bold mt-0.5">4.</span>
-                <p className="text-gray-400">Deposits add to the reserve, <strong className="text-amber-300">permanently increasing</strong> the floor for all holders</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Key points */}
-          <div className="pt-5 border-t border-gray-800">
-            <div className="grid md:grid-cols-4 gap-4 text-center">
-              <div className="bg-gray-800/50 rounded-xl py-3 px-4">
-                <p className="text-xs text-gray-400 mb-1">Floor Price</p>
-                <p className="text-sm font-semibold text-green-400">{"\u2191"} Can only go up</p>
-              </div>
-              <div className="bg-gray-800/50 rounded-xl py-3 px-4">
-                <p className="text-xs text-gray-400 mb-1">Arbitrage</p>
-                <p className="text-sm font-semibold text-purple-400">Enforces min price</p>
-              </div>
-              <div className="bg-gray-800/50 rounded-xl py-3 px-4">
-                <p className="text-xs text-gray-400 mb-1">Loans</p>
-                <p className="text-sm font-semibold text-cyan-400">Always overcollateralized</p>
-              </div>
-              <div className="bg-gray-800/50 rounded-xl py-3 px-4">
-                <p className="text-xs text-gray-400 mb-1">Smart Contract</p>
-                <p className="text-sm font-semibold text-amber-400">Fully on-chain</p>
-              </div>
             </div>
           </div>
         </div>
