@@ -159,12 +159,12 @@ export default function Dashboard() {
           <>
             {/* Balances */}
             <section className="grid grid-cols-2 gap-px bg-white/5 rounded-2xl overflow-hidden mb-8">
-              <div className="bg-black p-5">
-                <p className="text-neutral-500 text-xs uppercase tracking-wider mb-1">Your VAULT</p>
+              <div className="bg-black p-5 text-center">
+                <p className="text-neutral-500 text-xs uppercase tracking-wider mb-1">Your Vault Available</p>
                 <p className="text-2xl font-bold">{formatNum(data.userVaultBalance)}</p>
               </div>
-              <div className="bg-black p-5">
-                <p className="text-neutral-500 text-xs uppercase tracking-wider mb-1">Floor Value</p>
+              <div className="bg-black p-5 text-center">
+                <p className="text-neutral-500 text-xs uppercase tracking-wider mb-1">Your Vault Floor Value</p>
                 <p className="text-2xl font-bold">
                   {floorUsd > 0 ? `$${(data.userVaultBalance * floorUsd).toFixed(2)}` : "..."}
                 </p>
