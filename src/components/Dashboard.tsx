@@ -158,16 +158,19 @@ export default function Dashboard() {
         {wallet.publicKey && data && (
           <>
             {/* Balances */}
-            <section className="mb-8">
-              <div className="grid grid-cols-2 gap-px bg-white/5 rounded-2xl overflow-hidden">
-                <div className="bg-black p-5">
-                  <p className="text-neutral-500 text-xs uppercase tracking-wider mb-1">Your VAULT</p>
-                  <p className="text-2xl font-bold">{formatNum(data.userVaultBalance)}</p>
-                </div>
-                <div className="bg-black p-5">
-                  <p className="text-neutral-500 text-xs uppercase tracking-wider mb-1">Your JitoSOL</p>
-                  <p className="text-2xl font-bold">{data.userReserveBalance.toFixed(4)}</p>
-                </div>
+            <section className="grid grid-cols-2 gap-px bg-white/5 rounded-2xl overflow-hidden mb-8">
+              <div className="bg-black p-5">
+                <p className="text-neutral-500 text-xs uppercase tracking-wider mb-1">Your VAULT</p>
+                <p className="text-2xl font-bold">{formatNum(data.userVaultBalance)}</p>
+              </div>
+              <div className="bg-black p-5">
+                <p className="text-neutral-500 text-xs uppercase tracking-wider mb-1">Floor Value</p>
+                <p className="text-2xl font-bold">
+                  {floorUsd > 0 ? `$${(data.userVaultBalance * floorUsd).toFixed(2)}` : "..."}
+                </p>
+                <p className="text-neutral-600 text-xs mt-1">
+                  {data.floorPriceJitosol > 0 ? `${(data.userVaultBalance * data.floorPriceJitosol).toFixed(4)} JitoSOL` : ""}
+                </p>
               </div>
             </section>
 
@@ -204,12 +207,12 @@ export default function Dashboard() {
 
             {/* Action Tabs */}
             <section className="mb-16">
-              <div className="flex justify-center gap-0 border-b border-white/10 mb-8">
+              <div className="grid grid-cols-4 border-b border-white/10 mb-8">
                 {(["burn", "borrow", "repay", "deposit"] as const).map((t) => (
                   <button
                     key={t}
                     onClick={() => setTab(t)}
-                    className={`px-6 py-3 text-sm font-medium transition-all relative ${
+                    className={`py-3 text-sm font-medium transition-all relative ${
                       tab === t
                         ? "text-white"
                         : "text-neutral-500 hover:text-neutral-300"
@@ -223,7 +226,7 @@ export default function Dashboard() {
                 ))}
               </div>
 
-              <div className="max-w-lg mx-auto">
+              <div>
                 {tab === "burn" && <BurnPanel data={data} jitosolUsd={jitosolUsd} onSuccess={refresh} />}
                 {tab === "borrow" && <BorrowPanel data={data} jitosolUsd={jitosolUsd} onSuccess={refresh} />}
                 {tab === "repay" && <RepayPanel data={data} onSuccess={refresh} />}
