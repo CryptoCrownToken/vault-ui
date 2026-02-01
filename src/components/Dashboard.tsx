@@ -25,7 +25,6 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"burn" | "borrow" | "repay" | "deposit">("burn");
 
-  // Fetch price
   useEffect(() => {
     fetch("/api/price")
       .then((r) => r.json())
@@ -36,14 +35,11 @@ export default function Dashboard() {
       .catch(() => {});
   }, []);
 
-  // Fetch protocol data
   const refresh = useCallback(async () => {
     try {
       setLoading(true);
       const provider = wallet.publicKey && wallet.signTransaction
-        ? new AnchorProvider(connection, wallet as any, {
-            commitment: "confirmed",
-          })
+        ? new AnchorProvider(connection, wallet as any, { commitment: "confirmed" })
         : new AnchorProvider(
             connection,
             {
@@ -55,11 +51,7 @@ export default function Dashboard() {
           );
 
       const program = getProgram(provider);
-      const result = await fetchDashboard(
-        connection,
-        program,
-        wallet.publicKey || null
-      );
+      const result = await fetchDashboard(connection, program, wallet.publicKey || null);
       setData(result);
     } catch (err) {
       console.error("Fetch error:", err);
@@ -77,246 +69,200 @@ export default function Dashboard() {
   const floorUsd = data ? data.floorPriceJitosol * jitosolUsd : 0;
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
-      {/* Header */}
-      <header className="border-b border-gray-800 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <img src="/vault-logo.svg" alt="VAULT" className="w-8 h-8 rounded-lg" />
-          <h1 className="text-xl font-bold">VAULT Protocol</h1>
-          <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full">
-            {SOLANA_NETWORK}
-          </span>
+    <div className="min-h-screen bg-black text-white">
+      {/* ── Header ── */}
+      <header className="sticky top-0 z-50 bg-black/80 backdrop-blur-md border-b border-white/5">
+        <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <img src="/vault-logo.svg" alt="VAULT" className="w-7 h-7" />
+            <span className="text-lg font-semibold tracking-tight">VAULT</span>
+            <span className="text-[10px] uppercase tracking-widest text-neutral-500 border border-neutral-800 px-2 py-0.5 rounded-full">
+              {SOLANA_NETWORK}
+            </span>
+          </div>
+          <WalletMultiButton />
         </div>
-        <WalletMultiButton />
       </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-8">
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-            <p className="text-gray-400 text-xs mb-1">Floor Price</p>
-            <p className="text-xl font-bold">
-              {floorUsd > 0 ? `$${floorUsd.toFixed(6)}` : "..."}
-            </p>
-            <p className="text-gray-500 text-xs mt-1">
-              {data ? `${data.floorPriceJitosol.toFixed(8)} JitoSOL` : "..."}
-            </p>
-          </div>
+      <main className="max-w-5xl mx-auto px-6">
+        {/* ── Hero ── */}
+        <section className="pt-16 pb-12 text-center">
+          <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">
+            Floor price guaranteed.
+          </h1>
+          <p className="text-neutral-400 text-lg max-w-xl mx-auto leading-relaxed">
+            Every VAULT token is backed by JitoSOL reserves. Burn to redeem, borrow at zero interest,
+            or arbitrage below the floor.
+          </p>
+        </section>
 
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-            <p className="text-gray-400 text-xs mb-1">Reserve Value</p>
-            <p className="text-xl font-bold">
-              {data && jitosolUsd > 0
-                ? `$${(data.reserveBalance * jitosolUsd).toFixed(2)}`
-                : "..."}
-            </p>
-            <p className="text-gray-500 text-xs mt-1">
-              {data ? `${data.reserveBalance.toFixed(4)} JitoSOL` : "..."}
-            </p>
-          </div>
+        {/* ── Stats ── */}
+        <section className="grid grid-cols-2 md:grid-cols-4 gap-px bg-white/5 rounded-2xl overflow-hidden mb-16">
+          <StatCard
+            label="Floor Price"
+            value={floorUsd > 0 ? `$${floorUsd.toFixed(6)}` : "..."}
+            sub={data ? `${data.floorPriceJitosol.toFixed(8)} JitoSOL` : ""}
+          />
+          <StatCard
+            label="Reserve"
+            value={data && jitosolUsd > 0 ? `$${(data.reserveBalance * jitosolUsd).toFixed(2)}` : "..."}
+            sub={data ? `${data.reserveBalance.toFixed(4)} JitoSOL` : ""}
+          />
+          <StatCard
+            label="Annual Yield"
+            value={data && jitosolUsd > 0 && apy > 0 ? `$${(data.reserveBalance * jitosolUsd * apy).toFixed(2)}` : "..."}
+            sub={apy > 0 ? `APY ${(apy * 100).toFixed(2)}%` : ""}
+          />
+          <StatCard
+            label="Circulating"
+            value={data ? formatNum(data.circulatingSupply) : "..."}
+            sub={data ? `${formatNum(data.totalLocked)} locked` : ""}
+          />
+        </section>
 
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-            <p className="text-gray-400 text-xs mb-1">Annual Yield</p>
-            <p className="text-xl font-bold">
-              {data && jitosolUsd > 0 && apy > 0
-                ? `$${(data.reserveBalance * jitosolUsd * apy).toFixed(2)}`
-                : "..."}
-            </p>
-            <p className="text-gray-500 text-xs mt-1">
-              {apy > 0 ? `APY ${(apy * 100).toFixed(2)}%` : "Loading APY..."}
-            </p>
-          </div>
-
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-            <p className="text-gray-400 text-xs mb-1">Circulating Supply</p>
-            <p className="text-xl font-bold">
-              {data ? formatNum(data.circulatingSupply) : "..."}
-            </p>
-            <p className="text-gray-500 text-xs mt-1">
-              {data
-                ? `\uD83D\uDD12 ${formatNum(data.totalLocked)} locked in loans`
-                : "..."}
-            </p>
-          </div>
-        </div>
-
-        {/* How It Works */}
-        <div className="mb-8 bg-gradient-to-br from-gray-900 to-gray-900/50 border border-gray-800 rounded-2xl p-6">
-          <h2 className="text-lg font-bold mb-5 flex items-center gap-2">
-            <span className="bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
-              How VAULT Protocol Works
-            </span>
-          </h2>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            {/* Step 1 */}
-            <div className="relative">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center text-xl shrink-0">
-                  {"\uD83D\uDFE1"}
-                </div>
-                <h3 className="font-semibold text-white">JitoSOL Reserve</h3>
-              </div>
-              <p className="text-gray-400 text-sm leading-relaxed">
-                The protocol holds a shared reserve of <strong className="text-purple-300">JitoSOL</strong> (liquid staked SOL).
-                Every VAULT holder owns a proportional share of this reserve. If you hold 5% of the supply, you own 5% of the reserve.
-                The reserve grows over time thanks to <strong className="text-purple-300">trading fees</strong> used to buy JitoSOL
-                and the <strong className="text-purple-300">built-in staking yield</strong> of JitoSOL itself.
+        {/* ── How It Works ── */}
+        <section className="mb-16">
+          <h2 className="text-sm uppercase tracking-widest text-neutral-500 mb-6">How it works</h2>
+          <div className="grid md:grid-cols-3 gap-8">
+            <div>
+              <div className="text-2xl mb-3">01</div>
+              <h3 className="text-white font-semibold mb-2">JitoSOL Reserve</h3>
+              <p className="text-neutral-400 text-sm leading-relaxed">
+                The protocol holds a shared reserve of JitoSOL. Every VAULT holder
+                owns a proportional share. The reserve grows from trading fees and
+                JitoSOL staking yield.
               </p>
             </div>
-
-            {/* Step 2 */}
-            <div className="relative">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-xl bg-cyan-500/20 flex items-center justify-center text-xl shrink-0">
-                  {"\uD83D\uDD25"}
-                </div>
-                <h3 className="font-semibold text-white">Burn &amp; Arbitrage</h3>
-              </div>
-              <p className="text-gray-400 text-sm leading-relaxed">
-                Any VAULT can be <strong className="text-cyan-300">burned</strong> to
-                redeem its share of the reserve at the <strong className="text-cyan-300">floor price</strong>.
-                If VAULT trades below the floor on the market, anyone can buy cheap and burn for
-                profit - this arbitrage <strong className="text-cyan-300">enforces the minimum price</strong>.
+            <div>
+              <div className="text-2xl mb-3">02</div>
+              <h3 className="text-white font-semibold mb-2">Burn & Arbitrage</h3>
+              <p className="text-neutral-400 text-sm leading-relaxed">
+                Burn VAULT to redeem JitoSOL at the floor price. If VAULT trades
+                below the floor, buy cheap and burn for guaranteed profit. This
+                arbitrage enforces the minimum price.
               </p>
             </div>
-
-            {/* Step 3 */}
-            <div className="relative">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-xl shrink-0">
-                  {"\uD83D\uDCB0"}
-                </div>
-                <h3 className="font-semibold text-white">Interest-Free Loans</h3>
-              </div>
-              <p className="text-gray-400 text-sm leading-relaxed">
-                Lock your VAULT to <strong className="text-emerald-300">borrow JitoSOL at floor price</strong> with
-                zero interest. Use the borrowed JitoSOL to earn yield elsewhere, then repay to
-                get your VAULT back. Since VAULT always trades at or above the floor, your collateral
-                is always worth <strong className="text-emerald-300">more than the loan</strong>.
+            <div>
+              <div className="text-2xl mb-3">03</div>
+              <h3 className="text-white font-semibold mb-2">Interest-Free Loans</h3>
+              <p className="text-neutral-400 text-sm leading-relaxed">
+                Lock VAULT to borrow JitoSOL at zero interest. Use the JitoSOL to
+                earn yield elsewhere, then repay to get your VAULT back. Your
+                collateral always exceeds the loan value.
               </p>
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* User balances */}
+        {/* ── Wallet Section ── */}
         {wallet.publicKey && data && (
-          <div className="grid grid-cols-2 gap-4 mb-8">
-            <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-              <p className="text-gray-400 text-sm">Your VAULT Balance</p>
-              <p className="text-2xl font-bold mt-1">{formatNum(data.userVaultBalance)}</p>
-            </div>
-            <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-              <p className="text-gray-400 text-sm">Your JitoSOL Balance</p>
-              <p className="text-2xl font-bold mt-1">{data.userReserveBalance.toFixed(4)}</p>
-            </div>
-          </div>
-        )}
-
-        {/* Active loans */}
-        {wallet.publicKey && data && data.loans.length > 0 && (
-          <div className="space-y-3 mb-6">
-            {data.loans.map((loanEntry, idx) => (
-              <div key={idx} className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-4">
-                <h3 className="text-purple-300 font-semibold mb-2">
-                  {"\u26A1"} Loan #{Number(loanEntry.loan.loanId)}
-                </h3>
-                <div className="grid grid-cols-3 gap-4 text-sm">
-                  <div>
-                    <p className="text-gray-400">VAULT Locked</p>
-                    <p className="font-bold">
-                      {formatNum(Number(loanEntry.loan.vaultLocked) / 10 ** 6)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-gray-400">JitoSOL Borrowed</p>
-                    <p className="font-bold">
-                      {(Number(loanEntry.loan.jitosolBorrowed) / 10 ** 9).toFixed(4)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-gray-400">Due Date</p>
-                    <p className="font-bold">
-                      {new Date(Number(loanEntry.loan.dueTime) * 1000).toLocaleDateString()}
-                    </p>
-                  </div>
+          <>
+            {/* Balances */}
+            <section className="mb-8">
+              <div className="grid grid-cols-2 gap-px bg-white/5 rounded-xl overflow-hidden">
+                <div className="bg-black p-5">
+                  <p className="text-neutral-500 text-xs uppercase tracking-wider mb-1">Your VAULT</p>
+                  <p className="text-2xl font-bold">{formatNum(data.userVaultBalance)}</p>
+                </div>
+                <div className="bg-black p-5">
+                  <p className="text-neutral-500 text-xs uppercase tracking-wider mb-1">Your JitoSOL</p>
+                  <p className="text-2xl font-bold">{data.userReserveBalance.toFixed(4)}</p>
                 </div>
               </div>
-            ))}
-          </div>
+            </section>
+
+            {/* Active Loans */}
+            {data.loans.length > 0 && (
+              <section className="mb-8">
+                <h2 className="text-sm uppercase tracking-widest text-neutral-500 mb-4">Active Loans</h2>
+                <div className="space-y-2">
+                  {data.loans.map((loanEntry, idx) => (
+                    <div key={idx} className="border border-white/10 rounded-xl p-4 flex items-center justify-between">
+                      <div className="flex items-center gap-6">
+                        <span className="text-neutral-500 text-sm">#{Number(loanEntry.loan.loanId)}</span>
+                        <div>
+                          <p className="text-sm">
+                            <span className="text-neutral-400">Locked </span>
+                            <span className="font-semibold">{formatNum(Number(loanEntry.loan.vaultLocked) / 10 ** 6)} VAULT</span>
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm">
+                            <span className="text-neutral-400">Borrowed </span>
+                            <span className="font-semibold">{(Number(loanEntry.loan.jitosolBorrowed) / 10 ** 9).toFixed(4)} JitoSOL</span>
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-neutral-500 text-xs">
+                        Due {new Date(Number(loanEntry.loan.dueTime) * 1000).toLocaleDateString()}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Action Tabs */}
+            <section className="mb-16">
+              <div className="flex gap-0 border-b border-white/10 mb-8">
+                {(["burn", "borrow", "repay", "deposit"] as const).map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setTab(t)}
+                    className={`px-5 py-3 text-sm font-medium transition-all relative ${
+                      tab === t
+                        ? "text-white"
+                        : "text-neutral-500 hover:text-neutral-300"
+                    }`}
+                  >
+                    {t === "burn" ? "Burn" : t === "borrow" ? "Borrow" : t === "repay" ? "Repay" : "Deposit"}
+                    {tab === t && (
+                      <span className="absolute bottom-0 left-0 right-0 h-px bg-white" />
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              <div className="max-w-lg">
+                {tab === "burn" && <BurnPanel data={data} jitosolUsd={jitosolUsd} onSuccess={refresh} />}
+                {tab === "borrow" && <BorrowPanel data={data} jitosolUsd={jitosolUsd} onSuccess={refresh} />}
+                {tab === "repay" && <RepayPanel data={data} onSuccess={refresh} />}
+                {tab === "deposit" && <DepositPanel data={data} jitosolUsd={jitosolUsd} onSuccess={refresh} />}
+              </div>
+            </section>
+          </>
         )}
 
-        {/* Action Tabs */}
-        {wallet.publicKey ? (
-          <>
-            <div className="flex gap-1 mb-6 bg-gray-900 rounded-xl p-1">
-              {(["burn", "borrow", "repay", "deposit"] as const).map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setTab(t)}
-                  className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                    tab === t
-                      ? "bg-gradient-to-r from-purple-600 to-cyan-500 text-white"
-                      : "text-gray-400 hover:text-white"
-                  }`}
-                >
-                  {t === "burn"
-                    ? "\uD83D\uDD25 Burn"
-                    : t === "borrow"
-                    ? "\uD83D\uDCB0 Borrow"
-                    : t === "repay"
-                    ? "\u2705 Repay"
-                    : "\uD83C\uDFE6 Deposit"}
-                </button>
-              ))}
-            </div>
-
-            {tab === "burn" && data && (
-              <BurnPanel
-                data={data}
-                jitosolUsd={jitosolUsd}
-                onSuccess={refresh}
-              />
-            )}
-            {tab === "borrow" && data && (
-              <BorrowPanel
-                data={data}
-                jitosolUsd={jitosolUsd}
-                onSuccess={refresh}
-              />
-            )}
-            {tab === "repay" && data && (
-              <RepayPanel
-                data={data}
-                onSuccess={refresh}
-              />
-            )}
-            {tab === "deposit" && data && (
-              <DepositPanel
-                data={data}
-                jitosolUsd={jitosolUsd}
-                onSuccess={refresh}
-              />
-            )}
-          </>
-        ) : (
-          <div className="text-center py-16 bg-gray-900 rounded-2xl border border-gray-800">
-            <p className="text-gray-400 text-lg mb-4">
-              Connect your wallet to interact with VAULT Protocol
-            </p>
+        {/* Connect prompt */}
+        {!wallet.publicKey && (
+          <section className="text-center py-20 mb-16">
+            <p className="text-neutral-500 mb-6">Connect your wallet to get started</p>
             <WalletMultiButton />
-          </div>
+          </section>
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-gray-800 px-6 py-4 text-center text-gray-500 text-sm">
-        VAULT Protocol v2 | {SOLANA_NETWORK} | Floor price guaranteed by JitoSOL reserves
+      {/* ── Footer ── */}
+      <footer className="border-t border-white/5 py-8">
+        <div className="max-w-5xl mx-auto px-6 flex items-center justify-between text-neutral-600 text-xs">
+          <span>VAULT Protocol</span>
+          <span>{SOLANA_NETWORK}</span>
+        </div>
       </footer>
     </div>
   );
 }
 
+/* ── Stat Card ── */
+function StatCard({ label, value, sub }: { label: string; value: string; sub: string }) {
+  return (
+    <div className="bg-black p-5">
+      <p className="text-neutral-500 text-xs uppercase tracking-wider mb-1">{label}</p>
+      <p className="text-xl font-bold">{value}</p>
+      {sub && <p className="text-neutral-600 text-xs mt-1">{sub}</p>}
+    </div>
+  );
+}
 
 function formatNum(n: number): string {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(2) + "M";

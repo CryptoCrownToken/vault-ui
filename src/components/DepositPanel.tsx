@@ -29,17 +29,12 @@ export default function DepositPanel({ data, jitosolUsd, onSuccess }: Props) {
 
   const handleDeposit = async () => {
     if (!wallet.publicKey || !wallet.signTransaction || numAmount <= 0) return;
-
     try {
       setStatus("pending");
       setError("");
-
-      const provider = new AnchorProvider(connection, wallet as any, {
-        commitment: "confirmed",
-      });
+      const provider = new AnchorProvider(connection, wallet as any, { commitment: "confirmed" });
       const program = getProgram(provider);
       const sig = await depositReserve(program, wallet.publicKey, numAmount);
-
       setTxSig(sig);
       setStatus("success");
       setAmount("");
@@ -51,61 +46,52 @@ export default function DepositPanel({ data, jitosolUsd, onSuccess }: Props) {
   };
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
-      <h2 className="text-lg font-semibold mb-4">Deposit JitoSOL to Reserve</h2>
-      <p className="text-gray-400 text-sm mb-6">
-        Contribute JitoSOL to the VAULT Protocol reserve. This strengthens the
-        floor price for all VAULT holders.
+    <div>
+      <h2 className="text-lg font-semibold mb-1">Deposit JitoSOL</h2>
+      <p className="text-neutral-500 text-sm mb-6">
+        Contribute to the reserve. This increases the floor price for all VAULT holders.
       </p>
 
       {/* Warning */}
-      <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 mb-6">
-        <p className="text-amber-300 text-sm font-semibold mb-2">
-          {"\u26A0\uFE0F"} Irreversible Action
-        </p>
-        <p className="text-amber-200/80 text-sm leading-relaxed">
-          Deposited JitoSOL goes directly into the VAULT Protocol reserve and
-          <strong> cannot be withdrawn</strong>. This permanently increases the
-          floor price for all VAULT holders. Only deposit if you intend to
-          contribute to the protocol.
+      <div className="border border-neutral-800 rounded-xl p-4 mb-6 bg-white/[0.02]">
+        <p className="text-neutral-300 text-xs font-medium mb-1">Irreversible</p>
+        <p className="text-neutral-500 text-xs leading-relaxed">
+          Deposited JitoSOL goes directly into the reserve and cannot be withdrawn.
+          Only deposit if you intend to contribute to the protocol.
         </p>
       </div>
 
-      {/* Current reserve info */}
-      <div className="bg-gray-800/50 rounded-xl p-4 mb-6">
+      {/* Current reserve */}
+      <div className="border border-white/10 rounded-xl p-4 mb-6">
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
-            <p className="text-gray-400">Current Reserve</p>
-            <p className="font-bold text-white">{data.reserveBalance.toFixed(4)} JitoSOL</p>
+            <p className="text-neutral-500 text-xs">Current Reserve</p>
+            <p className="font-semibold">{data.reserveBalance.toFixed(4)} JitoSOL</p>
             {jitosolUsd > 0 && (
-              <p className="text-gray-500 text-xs">${(data.reserveBalance * jitosolUsd).toFixed(2)}</p>
+              <p className="text-neutral-600 text-xs">${(data.reserveBalance * jitosolUsd).toFixed(2)}</p>
             )}
           </div>
           <div>
-            <p className="text-gray-400">Current Floor Price</p>
-            <p className="font-bold text-white">
-              {data.floorPriceJitosol > 0
-                ? `${data.floorPriceJitosol.toFixed(10)} JitoSOL`
-                : "N/A"}
+            <p className="text-neutral-500 text-xs">Current Floor</p>
+            <p className="font-semibold">
+              {data.floorPriceJitosol > 0 ? `${data.floorPriceJitosol.toFixed(10)}` : "N/A"}
             </p>
             {jitosolUsd > 0 && data.floorPriceJitosol > 0 && (
-              <p className="text-gray-500 text-xs">
-                ${(data.floorPriceJitosol * jitosolUsd).toFixed(8)}
-              </p>
+              <p className="text-neutral-600 text-xs">${(data.floorPriceJitosol * jitosolUsd).toFixed(8)}</p>
             )}
           </div>
         </div>
       </div>
 
       {/* Input */}
-      <div className="bg-gray-800 rounded-xl p-4 mb-4">
+      <div className="border border-white/10 rounded-xl p-4 mb-6">
         <div className="flex justify-between items-center mb-2">
-          <span className="text-gray-400 text-sm">You deposit</span>
+          <span className="text-neutral-500 text-xs uppercase tracking-wider">You deposit</span>
           <button
             onClick={() => setAmount(data.userReserveBalance.toFixed(9))}
-            className="text-purple-400 text-xs hover:text-purple-300"
+            className="text-neutral-500 text-xs hover:text-white transition-colors"
           >
-            MAX: {data.userReserveBalance.toFixed(4)} JitoSOL
+            MAX {data.userReserveBalance.toFixed(4)}
           </button>
         </div>
         <div className="flex items-center gap-3">
@@ -114,36 +100,32 @@ export default function DepositPanel({ data, jitosolUsd, onSuccess }: Props) {
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder="0.00"
-            className="bg-transparent text-2xl font-bold outline-none flex-1 w-0"
+            className="bg-transparent text-2xl font-bold outline-none flex-1 w-0 placeholder-neutral-700"
             min="0"
             step="0.001"
           />
-          <span className="text-gray-400 font-medium">JitoSOL</span>
+          <span className="text-neutral-500 text-sm font-medium">JitoSOL</span>
         </div>
         {usdValue > 0 && (
-          <p className="text-gray-500 text-sm mt-1">{"\u2248"} ${usdValue.toFixed(2)}</p>
+          <p className="text-neutral-600 text-xs mt-1">~${usdValue.toFixed(2)}</p>
         )}
       </div>
 
-      {/* Impact preview */}
+      {/* Impact */}
       {numAmount > 0 && data.circulatingSupply > 0 && (() => {
         const newFloorJitosol = (data.reserveBalance + numAmount) / data.circulatingSupply;
         const newFloorUsd = newFloorJitosol * jitosolUsd;
         return (
-          <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-3 mb-6 text-sm text-green-300">
-            <p className="font-semibold mb-1">{"\u2728"} Impact Preview</p>
-            <p>
-              New floor price:{" "}
-              <strong>{newFloorJitosol.toFixed(10)} JitoSOL</strong>
+          <div className="border border-white/5 rounded-xl p-3 mb-6 bg-white/[0.02]">
+            <p className="text-neutral-500 text-xs mb-1">Impact preview</p>
+            <p className="text-neutral-300 text-xs">
+              New floor: <span className="text-white font-medium">{newFloorJitosol.toFixed(10)} JitoSOL</span>
               {newFloorUsd > 0 && (
-                <span className="text-green-400/70"> ({"\u2248"} ${newFloorUsd.toFixed(6)})</span>
+                <span className="text-neutral-500"> (~${newFloorUsd.toFixed(6)})</span>
               )}
             </p>
-            <p>
-              Floor price increase:{" "}
-              <strong>
-                +{((numAmount / (data.reserveBalance || 1)) * 100).toFixed(4)}%
-              </strong>
+            <p className="text-neutral-300 text-xs">
+              Increase: <span className="text-white font-medium">+{((numAmount / (data.reserveBalance || 1)) * 100).toFixed(4)}%</span>
             </p>
           </div>
         );
@@ -153,27 +135,22 @@ export default function DepositPanel({ data, jitosolUsd, onSuccess }: Props) {
       <button
         onClick={handleDeposit}
         disabled={status === "pending" || numAmount <= 0 || numAmount > data.userReserveBalance}
-        className="w-full py-3 rounded-xl font-semibold text-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400"
+        className="w-full py-3 rounded-xl font-semibold transition-all disabled:opacity-30 disabled:cursor-not-allowed bg-white text-black hover:bg-neutral-200"
       >
         {status === "pending" ? "Depositing..." : "Deposit to Reserve"}
       </button>
 
       {/* Status */}
       {status === "success" && (
-        <div className="mt-4 bg-green-500/10 border border-green-500/30 rounded-xl p-3">
-          <p className="text-green-400 text-sm font-medium">Deposit successful! Thank you for contributing.</p>
-          <a
-            href={solscanTx(txSig)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-green-300 text-xs underline"
-          >
-            View on Solscan &rarr;
+        <div className="mt-4 border border-white/10 rounded-xl p-3">
+          <p className="text-white text-sm font-medium">Deposit successful</p>
+          <a href={solscanTx(txSig)} target="_blank" rel="noopener noreferrer" className="text-neutral-400 text-xs underline hover:text-white">
+            View on Solscan
           </a>
         </div>
       )}
       {status === "error" && (
-        <div className="mt-4 bg-red-500/10 border border-red-500/30 rounded-xl p-3">
+        <div className="mt-4 border border-red-500/20 rounded-xl p-3">
           <p className="text-red-400 text-sm">{error}</p>
         </div>
       )}

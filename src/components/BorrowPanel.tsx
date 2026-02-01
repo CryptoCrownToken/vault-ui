@@ -17,11 +17,7 @@ interface Props {
   onSuccess: () => void;
 }
 
-export default function BorrowPanel({
-  data,
-  jitosolUsd,
-  onSuccess,
-}: Props) {
+export default function BorrowPanel({ data, jitosolUsd, onSuccess }: Props) {
   const { connection } = useConnection();
   const wallet = useWallet();
   const [amount, setAmount] = useState("");
@@ -36,22 +32,15 @@ export default function BorrowPanel({
     data.circulatingSupply
   );
   const expectedUsd = expectedJitosol * jitosolUsd;
-  const floorPriceUsd = data.floorPriceJitosol * jitosolUsd;
-  const collateralValueUsd = numAmount * floorPriceUsd;
 
   const handleBorrow = async () => {
     if (!wallet.publicKey || !wallet.signTransaction || numAmount <= 0) return;
-
     try {
       setStatus("pending");
       setError("");
-
-      const provider = new AnchorProvider(connection, wallet as any, {
-        commitment: "confirmed",
-      });
+      const provider = new AnchorProvider(connection, wallet as any, { commitment: "confirmed" });
       const program = getProgram(provider);
       const { sig } = await borrow(program, wallet.publicKey, numAmount, data.loanCount);
-
       setTxSig(sig);
       setStatus("success");
       setAmount("");
@@ -63,35 +52,29 @@ export default function BorrowPanel({
   };
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
-      <h2 className="text-lg font-semibold mb-4">Borrow JitoSOL by Locking VAULT</h2>
-      <p className="text-gray-400 text-sm mb-4">
-        Lock your VAULT tokens as collateral to borrow JitoSOL at the floor price.
-        You can repay anytime within 30 days to get your VAULT back.
+    <div>
+      <h2 className="text-lg font-semibold mb-1">Borrow JitoSOL</h2>
+      <p className="text-neutral-500 text-sm mb-6">
+        Lock VAULT as collateral to borrow JitoSOL at floor price. Zero interest, 30-day term.
       </p>
 
-      {/* Overcollateralization explanation */}
-      <div className="bg-gray-800/60 border border-gray-700/50 rounded-xl p-4 mb-5">
-        <p className="text-purple-300 text-xs font-semibold mb-2">
-          {"\uD83D\uDEE1\uFE0F"} Zero Interest, Always Overcollateralized
-        </p>
-        <p className="text-gray-400 text-xs leading-relaxed">
-          Borrow JitoSOL at floor price with <strong className="text-white">no interest</strong>.
-          Use it to earn yield elsewhere, then repay to unlock your VAULT.
-          Since VAULT always trades at or above the floor, your collateral is always worth
-          more than the loan.
+      {/* Overcollateral note */}
+      <div className="border border-white/5 rounded-xl p-4 mb-6 bg-white/[0.02]">
+        <p className="text-neutral-400 text-xs leading-relaxed">
+          Since VAULT always trades at or above the floor, your collateral is always worth more than the loan.
+          Use borrowed JitoSOL to earn yield elsewhere, then repay to get your VAULT back.
         </p>
       </div>
 
       {/* Input */}
-      <div className="bg-gray-800 rounded-xl p-4 mb-4">
+      <div className="border border-white/10 rounded-xl p-4 mb-3">
         <div className="flex justify-between items-center mb-2">
-          <span className="text-gray-400 text-sm">You lock</span>
+          <span className="text-neutral-500 text-xs uppercase tracking-wider">You lock</span>
           <button
             onClick={() => setAmount(data.userVaultBalance.toString())}
-            className="text-purple-400 text-xs hover:text-purple-300"
+            className="text-neutral-500 text-xs hover:text-white transition-colors"
           >
-            MAX: {data.userVaultBalance.toLocaleString()} VAULT
+            MAX {data.userVaultBalance.toLocaleString()}
           </button>
         </div>
         <div className="flex items-center gap-3">
@@ -100,76 +83,70 @@ export default function BorrowPanel({
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder="0.00"
-            className="bg-transparent text-2xl font-bold outline-none flex-1 w-0"
+            className="bg-transparent text-2xl font-bold outline-none flex-1 w-0 placeholder-neutral-700"
             min="0"
             max={data.userVaultBalance}
           />
-          <span className="text-gray-400 font-medium">VAULT</span>
-        </div>
-        {numAmount > 0 && collateralValueUsd > 0 && (
-          <p className="text-gray-500 text-xs mt-1">Collateral floor value: ${collateralValueUsd.toFixed(2)}</p>
-        )}
-      </div>
-
-      {/* Arrow */}
-      <div className="flex justify-center my-2">
-        <div className="bg-gray-800 rounded-lg p-2">
-          <span className="text-gray-400">&darr;</span>
+          <span className="text-neutral-500 text-sm font-medium">VAULT</span>
         </div>
       </div>
 
       {/* Output */}
-      <div className="bg-gray-800 rounded-xl p-4 mb-4">
+      <div className="border border-white/10 rounded-xl p-4 mb-6">
         <div className="flex justify-between items-center mb-2">
-          <span className="text-gray-400 text-sm">You receive</span>
+          <span className="text-neutral-500 text-xs uppercase tracking-wider">You receive</span>
         </div>
         <div className="flex items-center gap-3">
           <span className="text-2xl font-bold">
             {expectedJitosol > 0 ? expectedJitosol.toFixed(6) : "0.00"}
           </span>
-          <span className="text-gray-400 font-medium">JitoSOL</span>
+          <span className="text-neutral-500 text-sm font-medium">JitoSOL</span>
         </div>
         {expectedUsd > 0 && (
-          <p className="text-gray-500 text-sm mt-1">&asymp; ${expectedUsd.toFixed(4)}</p>
+          <p className="text-neutral-600 text-xs mt-1">~${expectedUsd.toFixed(4)}</p>
         )}
       </div>
 
-      {/* Info */}
-      <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 mb-4 text-sm text-blue-300">
-        <p>{"\uD83D\uDCC5"} Loan duration: <strong>30 days</strong></p>
-        <p>{"\uD83D\uDD12"} Your VAULT is safe in escrow and returned on repay</p>
-        <p>{"\uD83D\uDCB0"} You repay the same JitoSOL amount to unlock your VAULT</p>
-        <p>{"\u2699\uFE0F"} A one-time fee of <strong>~0.00349 SOL</strong> is charged to open the escrow account - it is <strong>refunded automatically</strong> when you repay the loan</p>
-      </div>
-      <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 mb-6 text-sm text-red-300">
-        <p>{"\u26A0\uFE0F"} <strong>Warning:</strong> If you do not repay within 30 days, <strong>0.10% of your locked VAULT will be burned</strong> and the loan will be extended by 30 additional days. This penalty repeats every 30 days until repayment.</p>
+      {/* Loan details */}
+      <div className="space-y-2 mb-6 text-sm text-neutral-400">
+        <div className="flex justify-between">
+          <span>Duration</span>
+          <span className="text-white">30 days</span>
+        </div>
+        <div className="flex justify-between">
+          <span>Interest rate</span>
+          <span className="text-white">0%</span>
+        </div>
+        <div className="flex justify-between">
+          <span>Escrow fee</span>
+          <span className="text-white">~0.00349 SOL (refunded on repay)</span>
+        </div>
+        <div className="flex justify-between">
+          <span>Late penalty</span>
+          <span className="text-neutral-500">0.10% burn per 30 days overdue</span>
+        </div>
       </div>
 
       {/* Button */}
       <button
         onClick={handleBorrow}
         disabled={status === "pending" || numAmount <= 0 || numAmount > data.userVaultBalance}
-        className="w-full py-3 rounded-xl font-semibold text-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-to-r from-purple-600 to-cyan-500 hover:from-purple-500 hover:to-cyan-400"
+        className="w-full py-3 rounded-xl font-semibold transition-all disabled:opacity-30 disabled:cursor-not-allowed bg-white text-black hover:bg-neutral-200"
       >
-        {status === "pending" ? "Processing..." : "Lock VAULT & Borrow"}
+        {status === "pending" ? "Processing..." : "Lock & Borrow"}
       </button>
 
       {/* Status */}
       {status === "success" && (
-        <div className="mt-4 bg-green-500/10 border border-green-500/30 rounded-xl p-3">
-          <p className="text-green-400 text-sm font-medium">Borrow successful!</p>
-          <a
-            href={solscanTx(txSig)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-green-300 text-xs underline"
-          >
-            View on Solscan &rarr;
+        <div className="mt-4 border border-white/10 rounded-xl p-3">
+          <p className="text-white text-sm font-medium">Borrow successful</p>
+          <a href={solscanTx(txSig)} target="_blank" rel="noopener noreferrer" className="text-neutral-400 text-xs underline hover:text-white">
+            View on Solscan
           </a>
         </div>
       )}
       {status === "error" && (
-        <div className="mt-4 bg-red-500/10 border border-red-500/30 rounded-xl p-3">
+        <div className="mt-4 border border-red-500/20 rounded-xl p-3">
           <p className="text-red-400 text-sm">{error}</p>
         </div>
       )}

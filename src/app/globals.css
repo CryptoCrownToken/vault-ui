@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #000000;
+  --foreground: #ffffff;
 }
 
 @theme inline {
@@ -12,15 +12,75 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+body {
+  background: #000000;
+  color: #ffffff;
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Wallet button override */
+.wallet-adapter-button {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border-radius: 9999px !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  height: 40px !important;
+  padding: 0 20px !important;
+  transition: all 0.15s ease !important;
+  border: none !important;
+}
+
+.wallet-adapter-button:hover {
+  background: #e5e5e5 !important;
+  transform: translateY(-1px) !important;
+}
+
+.wallet-adapter-button-trigger {
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+
+.wallet-adapter-modal-wrapper {
+  background: #111111 !important;
+  border: 1px solid #222222 !important;
+  border-radius: 16px !important;
+}
+
+.wallet-adapter-modal-title {
+  color: #ffffff !important;
+}
+
+.wallet-adapter-modal-list li {
+  background: #1a1a1a !important;
+  border-radius: 12px !important;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 3px;
+}
+
+/* Remove number input spinners */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Selection */
+::selection {
+  background: rgba(255, 255, 255, 0.2);
 }

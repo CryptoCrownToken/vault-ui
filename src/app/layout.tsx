@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "VAULT Protocol — Floor Price Guaranteed",
+  title: "VAULT Protocol - Floor Price Guaranteed",
   description:
     "Burn or borrow against VAULT tokens backed by JitoSOL reserves with a guaranteed floor price.",
 };
