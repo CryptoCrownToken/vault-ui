@@ -56,7 +56,7 @@ export default function BurnPanel({ data, jitosolUsd, onSuccess }: Props) {
     <div>
       <h2 className="text-lg font-semibold mb-1">Burn VAULT</h2>
       <p className="text-neutral-500 text-sm mb-6">
-        Redeem JitoSOL at the guaranteed floor price. Burned tokens are permanently destroyed.
+        Redeem JitoSOL at the floor price. Burned tokens are permanently destroyed.
       </p>
 
       {/* Floor price */}
@@ -76,7 +76,7 @@ export default function BurnPanel({ data, jitosolUsd, onSuccess }: Props) {
       <div className="border border-white/5 rounded-xl p-4 mb-6 bg-white/[0.02]">
         <p className="text-neutral-400 text-xs leading-relaxed">
           If VAULT trades below the floor on the market, you can buy cheap and burn here for
-          guaranteed profit. This arbitrage is what enforces the minimum price.
+          profit. This arbitrage is what enforces the minimum price.
         </p>
       </div>
 

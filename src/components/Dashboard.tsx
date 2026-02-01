@@ -88,7 +88,7 @@ export default function Dashboard() {
         {/* ── Hero ── */}
         <section className="pt-16 pb-12 text-center">
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">
-            Floor price guaranteed.
+            A floor price you can trust.
           </h1>
           <p className="text-neutral-400 text-lg max-w-xl mx-auto leading-relaxed">
             Every VAULT token is backed by JitoSOL reserves. Burn to redeem, borrow at zero interest,
@@ -138,7 +138,7 @@ export default function Dashboard() {
               <h3 className="text-white font-semibold mb-2">Burn & Arbitrage</h3>
               <p className="text-neutral-400 text-sm leading-relaxed">
                 Burn VAULT to redeem JitoSOL at the floor price. If VAULT trades
-                below the floor, buy cheap and burn for guaranteed profit. This
+                below the floor, buy cheap and burn for profit. This
                 arbitrage enforces the minimum price.
               </p>
             </div>
@@ -159,7 +159,7 @@ export default function Dashboard() {
           <>
             {/* Balances */}
             <section className="mb-8">
-              <div className="grid grid-cols-2 gap-px bg-white/5 rounded-xl overflow-hidden">
+              <div className="grid grid-cols-2 gap-px bg-white/5 rounded-2xl overflow-hidden">
                 <div className="bg-black p-5">
                   <p className="text-neutral-500 text-xs uppercase tracking-wider mb-1">Your VAULT</p>
                   <p className="text-2xl font-bold">{formatNum(data.userVaultBalance)}</p>
@@ -204,12 +204,12 @@ export default function Dashboard() {
 
             {/* Action Tabs */}
             <section className="mb-16">
-              <div className="flex gap-0 border-b border-white/10 mb-8">
+              <div className="flex justify-center gap-0 border-b border-white/10 mb-8">
                 {(["burn", "borrow", "repay", "deposit"] as const).map((t) => (
                   <button
                     key={t}
                     onClick={() => setTab(t)}
-                    className={`px-5 py-3 text-sm font-medium transition-all relative ${
+                    className={`px-6 py-3 text-sm font-medium transition-all relative ${
                       tab === t
                         ? "text-white"
                         : "text-neutral-500 hover:text-neutral-300"
@@ -223,7 +223,7 @@ export default function Dashboard() {
                 ))}
               </div>
 
-              <div className="max-w-lg">
+              <div className="max-w-lg mx-auto">
                 {tab === "burn" && <BurnPanel data={data} jitosolUsd={jitosolUsd} onSuccess={refresh} />}
                 {tab === "borrow" && <BorrowPanel data={data} jitosolUsd={jitosolUsd} onSuccess={refresh} />}
                 {tab === "repay" && <RepayPanel data={data} onSuccess={refresh} />}
