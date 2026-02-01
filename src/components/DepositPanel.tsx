@@ -32,7 +32,7 @@ export default function DepositPanel({ data, jitosolUsd, onSuccess }: Props) {
     try {
       setStatus("pending");
       setError("");
-      const provider = new AnchorProvider(connection, wallet as any, { commitment: "confirmed" });
+      const provider = new AnchorProvider(connection, wallet as any, { preflightCommitment: "processed", commitment: "processed" });
       const program = getProgram(provider);
       const sig = await depositReserve(program, wallet.publicKey, numAmount);
       setTxSig(sig);

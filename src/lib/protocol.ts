@@ -202,7 +202,7 @@ export async function burnToRedeem(
       systemProgram: SystemProgram.programId,
       rent: SYSVAR_RENT_PUBKEY,
     })
-    .rpc();
+    .rpc({ commitment: "processed" });
 
   return sig;
 }
@@ -239,7 +239,7 @@ export async function borrow(
       rent: SYSVAR_RENT_PUBKEY,
     })
     .signers([escrow])
-    .rpc();
+    .rpc({ commitment: "processed" });
 
   return { sig, escrowPk: escrow.publicKey };
 }
@@ -270,7 +270,7 @@ export async function repay(
       tokenProgram: TOKEN_PROGRAM_ID,
       systemProgram: SystemProgram.programId,
     })
-    .rpc();
+    .rpc({ commitment: "processed" });
 
   return sig;
 }
@@ -296,7 +296,7 @@ export async function depositReserve(
       associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       systemProgram: SystemProgram.programId,
     })
-    .rpc();
+    .rpc({ commitment: "processed" });
 
   return sig;
 }

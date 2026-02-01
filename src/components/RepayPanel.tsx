@@ -35,7 +35,7 @@ export default function RepayPanel({ data, onSuccess }: Props) {
       setStatus("pending");
       setError("");
       setRepayingLoanId(Number(loanEntry.loan.loanId));
-      const provider = new AnchorProvider(connection, wallet as any, { commitment: "confirmed" });
+      const provider = new AnchorProvider(connection, wallet as any, { preflightCommitment: "processed", commitment: "processed" });
       const program = getProgram(provider);
       const sig = await repay(program, wallet.publicKey, loanEntry.loanPDA, loanEntry.escrowPk);
       setTxSig(sig);
