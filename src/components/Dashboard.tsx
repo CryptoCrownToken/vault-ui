@@ -264,7 +264,7 @@ export default function Dashboard() {
 /* ── Stat Card ── */
 function StatCard({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
-    <div className="bg-black p-5">
+    <div className="bg-black p-5 text-center">
       <p className="text-neutral-500 text-xs uppercase tracking-wider mb-1">{label}</p>
       <p className="text-xl font-bold">{value}</p>
       {sub && <p className="text-neutral-600 text-xs mt-1">{sub}</p>}
