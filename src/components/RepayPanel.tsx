@@ -79,7 +79,7 @@ export default function RepayPanel({ data, onSuccess }: Props) {
             <div key={idx} className={`border rounded-xl p-4 ${isOverdue ? "border-red-500/30" : "border-white/10"}`}>
               <div className="flex justify-between items-center mb-3">
                 <span className="text-sm font-medium">
-                  Loan #{loanId}
+                  Loan #{idx + 1}
                   {isOverdue && <span className="text-red-400 text-xs ml-2">OVERDUE</span>}
                 </span>
                 <span className="text-neutral-500 text-xs">Due {dueDate.toLocaleDateString()}</span>

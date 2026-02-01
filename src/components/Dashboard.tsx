@@ -187,7 +187,7 @@ export default function Dashboard() {
                   {data.loans.map((loanEntry, idx) => (
                     <div key={idx} className="border border-white/10 rounded-xl p-4 flex items-center justify-between">
                       <div className="flex items-center gap-6">
-                        <span className="text-neutral-500 text-sm">#{Number(loanEntry.loan.loanId)}</span>
+                        <span className="text-neutral-500 text-sm">#{idx + 1}</span>
                         <div>
                           <p className="text-sm">
                             <span className="text-neutral-400">Locked </span>
