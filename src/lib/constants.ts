@@ -43,3 +43,9 @@ export function solscanTx(sig: string): string {
     ? `https://solscan.io/tx/${sig}?cluster=devnet`
     : `https://solscan.io/tx/${sig}`;
 }
+
+export function solscanAccount(address: string): string {
+  return SOLANA_NETWORK === "devnet"
+    ? `https://solscan.io/account/${address}?cluster=devnet`
+    : `https://solscan.io/account/${address}`;
+}

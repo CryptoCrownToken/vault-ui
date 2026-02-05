@@ -1170,110 +1170,9 @@
       "args": []
     },
     {
-      "name": "liquidate",
-      "docs": [
-        "Liquidate: pénalise un emprunteur en retard (callable par n'importe qui)"
-      ],
-      "discriminator": [
-        223,
-        179,
-        226,
-        125,
-        48,
-        46,
-        39,
-        74
-      ],
-      "accounts": [
-        {
-          "name": "state",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  115,
-                  116,
-                  97,
-                  116,
-                  101
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "state.reserve_mint",
-                "account": "State"
-              },
-              {
-                "kind": "account",
-                "path": "state.vault_mint",
-                "account": "State"
-              }
-            ]
-          }
-        },
-        {
-          "name": "vault_mint",
-          "writable": true,
-          "relations": [
-            "state"
-          ]
-        },
-        {
-          "name": "loan",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  108,
-                  111,
-                  97,
-                  110
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "loan.borrower",
-                "account": "Loan"
-              },
-              {
-                "kind": "account",
-                "path": "loan.loan_id",
-                "account": "Loan"
-              }
-            ]
-          }
-        },
-        {
-          "name": "loan_vault_escrow",
-          "writable": true
-        },
-        {
-          "name": "borrower"
-        },
-        {
-          "name": "caller",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
-        }
-      ],
-      "args": []
-    },
-    {
       "name": "repay",
       "docs": [
-        "Repay: rembourse JitoSOL → récupère VAULT lockés"
+        "Repay: rembourse JitoSOL → récupère VAULT lockés (moins penalty si overdue)"
       ],
       "discriminator": [
         234,
@@ -1758,19 +1657,6 @@
       ]
     },
     {
-      "name": "LoanLiquidated",
-      "discriminator": [
-        1,
-        29,
-        28,
-        96,
-        66,
-        95,
-        8,
-        204
-      ]
-    },
-    {
       "name": "LoanRepaid",
       "discriminator": [
         202,
@@ -1827,21 +1713,16 @@
     },
     {
       "code": 6008,
-      "name": "LoanNotDue",
-      "msg": "Loan not due yet"
-    },
-    {
-      "code": 6009,
       "name": "NotBorrower",
       "msg": "Not the borrower"
     },
     {
-      "code": 6010,
+      "code": 6009,
       "name": "InvalidEscrow",
       "msg": "Invalid escrow account"
     },
     {
-      "code": 6011,
+      "code": 6010,
       "name": "NotAdmin",
       "msg": "Not the admin"
     }
@@ -1912,30 +1793,6 @@
       }
     },
     {
-      "name": "LoanLiquidated",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "borrower",
-            "type": "pubkey"
-          },
-          {
-            "name": "loan_id",
-            "type": "u64"
-          },
-          {
-            "name": "penalty_burned",
-            "type": "u64"
-          },
-          {
-            "name": "new_due_time",
-            "type": "i64"
-          }
-        ]
-      }
-    },
-    {
       "name": "LoanRepaid",
       "type": {
         "kind": "struct",
@@ -1950,6 +1807,14 @@
           },
           {
             "name": "vault_returned",
+            "type": "u64"
+          },
+          {
+            "name": "penalty_burned",
+            "type": "u64"
+          },
+          {
+            "name": "periods_overdue",
             "type": "u64"
           }
         ]

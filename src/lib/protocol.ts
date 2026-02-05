@@ -63,6 +63,8 @@ export interface DashboardData {
   userReserveBalance: number;
   loans: LoanWithKey[];
   loanCount: number;
+  loanDuration: number;   // seconds
+  penaltyRate: number;     // basis points (e.g. 10 = 0.1%)
 }
 
 // Derive PDAs
@@ -116,6 +118,8 @@ export async function fetchDashboard(
   const circulatingSupply = totalSupply - totalLocked;
   const floorPriceJitosol = circulatingSupply > 0 ? reserveBalance / circulatingSupply : 0;
   const loanCount = Number(stateAcc.loanCount);
+  const loanDuration = Number(stateAcc.loanDuration);
+  const penaltyRate = Number(stateAcc.penaltyRate);
 
   let userVaultBalance = 0;
   let userReserveBalance = 0;
@@ -170,6 +174,8 @@ export async function fetchDashboard(
     userReserveBalance,
     loans,
     loanCount,
+    loanDuration,
+    penaltyRate,
   };
 }
 
@@ -299,6 +305,36 @@ export async function depositReserve(
     .rpc({ commitment: "processed" });
 
   return sig;
+}
+
+// Calculate penalty info for overdue loans (burn happens at repay)
+export function getLoanExtensionInfo(
+  loan: LoanData,
+  loanDuration: number,
+  penaltyRate: number
+): { extensions: number; totalBurned: number; originalLocked: number } {
+  const dueTime = Number(loan.dueTime);
+  const vaultLocked = Number(loan.vaultLocked) / 10 ** VAULT_DECIMALS;
+  const now = Date.now() / 1000;
+
+  // If not overdue, no penalty
+  if (now <= dueTime || loanDuration <= 0) {
+    return { extensions: 0, totalBurned: 0, originalLocked: vaultLocked };
+  }
+
+  // Calculate periods overdue (matches on-chain logic)
+  const periodsOverdue = Math.floor((now - dueTime) / loanDuration) + 1;
+
+  // Linear penalty: locked * rate * periods (capped at 100%)
+  const rate = penaltyRate / 10000;
+  let totalBurned = vaultLocked * rate * periodsOverdue;
+
+  // Cap at 100% of original locked
+  if (totalBurned > vaultLocked) {
+    totalBurned = vaultLocked;
+  }
+
+  return { extensions: periodsOverdue, totalBurned, originalLocked: vaultLocked };
 }
 
 // Calculate expected output

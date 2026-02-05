@@ -111,7 +111,7 @@ export default function BorrowPanel({ data, jitosolUsd, onSuccess }: Props) {
       <div className="space-y-2 mb-6 text-sm text-neutral-400">
         <div className="flex justify-between">
           <span>Duration</span>
-          <span className="text-white">30 days</span>
+          <span className="text-white">{formatDuration(data.loanDuration)}</span>
         </div>
         <div className="flex justify-between">
           <span>Interest rate</span>
@@ -123,7 +123,7 @@ export default function BorrowPanel({ data, jitosolUsd, onSuccess }: Props) {
         </div>
         <div className="flex justify-between">
           <span>Late penalty</span>
-          <span className="text-neutral-500">0.10% burn per 30 days overdue</span>
+          <span className="text-neutral-500">{(data.penaltyRate / 100).toFixed(1)}% burn per {formatDuration(data.loanDuration)} overdue</span>
         </div>
       </div>
 
@@ -152,4 +152,20 @@ export default function BorrowPanel({ data, jitosolUsd, onSuccess }: Props) {
       )}
     </div>
   );
+}
+
+function formatDuration(seconds: number): string {
+  if (seconds >= 86400) {
+    const days = Math.round(seconds / 86400);
+    return `${days} day${days > 1 ? "s" : ""}`;
+  }
+  if (seconds >= 3600) {
+    const hours = Math.round(seconds / 3600);
+    return `${hours} hour${hours > 1 ? "s" : ""}`;
+  }
+  if (seconds >= 60) {
+    const mins = Math.round(seconds / 60);
+    return `${mins} minute${mins > 1 ? "s" : ""}`;
+  }
+  return `${seconds} second${seconds > 1 ? "s" : ""}`;
 }

@@ -7,9 +7,11 @@ import { AnchorProvider } from "@coral-xyz/anchor";
 import {
   fetchDashboard,
   getProgram,
+  getVaultReserveAta,
+  getLoanExtensionInfo,
   DashboardData,
 } from "@/lib/protocol";
-import { SOLANA_NETWORK } from "@/lib/constants";
+import { SOLANA_NETWORK, solscanAccount } from "@/lib/constants";
 import BurnPanel from "./BurnPanel";
 import BorrowPanel from "./BorrowPanel";
 import RepayPanel from "./RepayPanel";
@@ -39,7 +41,7 @@ export default function Dashboard() {
     try {
       setLoading(true);
       const provider = wallet.publicKey && wallet.signTransaction
-        ? new AnchorProvider(connection, wallet as any, { commitment: "confirmed" })
+        ? new AnchorProvider(connection, wallet as any, { commitment: "processed" })
         : new AnchorProvider(
             connection,
             {
@@ -47,7 +49,7 @@ export default function Dashboard() {
               signTransaction: async (tx: any) => tx,
               signAllTransactions: async (txs: any) => txs,
             } as any,
-            { commitment: "confirmed" }
+            { commitment: "processed" }
           );
 
       const program = getProgram(provider);
@@ -60,9 +62,10 @@ export default function Dashboard() {
     }
   }, [connection, wallet]);
 
+
   useEffect(() => {
     refresh();
-    const iv = setInterval(refresh, 30_000);
+    const iv = setInterval(refresh, 15_000);
     return () => clearInterval(iv);
   }, [refresh]);
 
@@ -94,6 +97,14 @@ export default function Dashboard() {
             Every VAULT token is backed by JitoSOL reserves. Burn to redeem, borrow at zero interest,
             or arbitrage below the floor.
           </p>
+          <a
+            href={solscanAccount(getVaultReserveAta().toBase58())}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block mt-3 text-neutral-500 text-sm underline hover:text-white transition-colors"
+          >
+            View live reserve on Solscan
+          </a>
         </section>
 
         {/* ── Stats ── */}
@@ -184,28 +195,59 @@ export default function Dashboard() {
               <section className="mb-8">
                 <h2 className="text-sm uppercase tracking-widest text-neutral-500 mb-4">Active Loans</h2>
                 <div className="space-y-2">
-                  {data.loans.map((loanEntry, idx) => (
-                    <div key={idx} className="border border-white/10 rounded-xl p-4 flex items-center justify-between">
-                      <div className="flex items-center gap-6">
-                        <span className="text-neutral-500 text-sm">#{idx + 1}</span>
-                        <div>
-                          <p className="text-sm">
-                            <span className="text-neutral-400">Locked </span>
-                            <span className="font-semibold">{formatNum(Number(loanEntry.loan.vaultLocked) / 10 ** 6)} VAULT</span>
-                          </p>
+                  {data.loans.map((loanEntry, idx) => {
+                    const extInfo = getLoanExtensionInfo(loanEntry.loan, data.loanDuration, data.penaltyRate);
+                    const dueTime = Number(loanEntry.loan.dueTime);
+                    const now = Date.now() / 1000;
+                    const isOverdue = dueTime < now;
+                    const vaultLocked = Number(loanEntry.loan.vaultLocked) / 10 ** 6;
+                    const penaltyPct = (data.penaltyRate / 100).toFixed(1);
+                    return (
+                      <a
+                        key={idx}
+                        href={solscanAccount(loanEntry.loanPDA.toBase58())}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`border rounded-xl p-4 hover:border-white/25 transition-colors cursor-pointer block ${
+                          isOverdue ? "border-red-500/30" : "border-white/10"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-6">
+                            <span className="text-neutral-500 text-sm">#{idx + 1}</span>
+                            <div>
+                              <p className="text-sm">
+                                <span className="text-neutral-400">Locked </span>
+                                <span className="font-semibold">{formatNum(vaultLocked)} VAULT</span>
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-sm">
+                                <span className="text-neutral-400">Borrowed </span>
+                                <span className="font-semibold">{(Number(loanEntry.loan.jitosolBorrowed) / 10 ** 9).toFixed(4)} JitoSOL</span>
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            {isOverdue ? (
+                              <span className="text-red-400 text-xs font-medium">OVERDUE</span>
+                            ) : (
+                              <span className="text-neutral-500 text-xs">
+                                Due {new Date(dueTime * 1000).toLocaleString()}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm">
-                            <span className="text-neutral-400">Borrowed </span>
-                            <span className="font-semibold">{(Number(loanEntry.loan.jitosolBorrowed) / 10 ** 9).toFixed(4)} JitoSOL</span>
-                          </p>
-                        </div>
-                      </div>
-                      <span className="text-neutral-500 text-xs">
-                        Due {new Date(Number(loanEntry.loan.dueTime) * 1000).toLocaleDateString()}
-                      </span>
-                    </div>
-                  ))}
+                        {isOverdue && (
+                          <div className="mt-2 pt-2 border-t border-white/5 flex items-center gap-4 text-xs">
+                            <span className="text-red-400">
+                              Penalty at repay: {extInfo.totalBurned.toFixed(2)} VAULT ({extInfo.extensions} period{extInfo.extensions > 1 ? "s" : ""} overdue)
+                            </span>
+                          </div>
+                        )}
+                      </a>
+                    );
+                  })}
                 </div>
               </section>
             )}

@@ -6,6 +6,7 @@ import { AnchorProvider } from "@coral-xyz/anchor";
 import {
   repay,
   getProgram,
+  getLoanExtensionInfo,
   DashboardData,
   LoanWithKey,
 } from "@/lib/protocol";
@@ -61,9 +62,18 @@ export default function RepayPanel({ data, onSuccess }: Props) {
   return (
     <div>
       <h2 className="text-lg font-semibold mb-1">Repay Loans</h2>
-      <p className="text-neutral-500 text-sm mb-6">
+      <p className="text-neutral-500 text-sm mb-4">
         Repay JitoSOL to unlock your VAULT from escrow.
       </p>
+
+      {/* Extension explanation */}
+      <div className="border border-white/5 rounded-xl p-4 mb-6 bg-white/[0.02]">
+        <p className="text-neutral-400 text-xs leading-relaxed">
+          Loans have a {formatDuration(data.loanDuration)} term. If not repaid by the due date, the loan automatically
+          extends for another {formatDuration(data.loanDuration)} and {(data.penaltyRate / 100).toFixed(1)}% of your locked VAULT is burned as a penalty.
+          This can repeat indefinitely. Repay early to avoid any burn.
+        </p>
+      </div>
 
       {/* Loans list */}
       <div className="space-y-3">
@@ -74,6 +84,7 @@ export default function RepayPanel({ data, onSuccess }: Props) {
           const isOverdue = dueDate < new Date();
           const loanId = Number(loanEntry.loan.loanId);
           const insufficientBalance = data.userReserveBalance < jitosolToRepay;
+          const extInfo = getLoanExtensionInfo(loanEntry.loan, data.loanDuration, data.penaltyRate);
 
           return (
             <div key={idx} className={`border rounded-xl p-4 ${isOverdue ? "border-red-500/30" : "border-white/10"}`}>
@@ -82,7 +93,7 @@ export default function RepayPanel({ data, onSuccess }: Props) {
                   Loan #{idx + 1}
                   {isOverdue && <span className="text-red-400 text-xs ml-2">OVERDUE</span>}
                 </span>
-                <span className="text-neutral-500 text-xs">Due {dueDate.toLocaleDateString()}</span>
+                <span className="text-neutral-500 text-xs">Due {dueDate.toLocaleDateString()} {dueDate.toLocaleTimeString()}</span>
               </div>
 
               <div className="grid grid-cols-2 gap-4 text-sm mb-4">
@@ -95,6 +106,23 @@ export default function RepayPanel({ data, onSuccess }: Props) {
                   <p className="font-semibold">{jitosolToRepay.toFixed(6)}</p>
                 </div>
               </div>
+
+              {extInfo.extensions > 0 && (
+                <div className="grid grid-cols-3 gap-4 text-sm mb-4 pt-3 border-t border-white/5">
+                  <div>
+                    <p className="text-neutral-500 text-xs">Periods Overdue</p>
+                    <p className="font-semibold text-red-400">{extInfo.extensions}</p>
+                  </div>
+                  <div>
+                    <p className="text-neutral-500 text-xs">Penalty</p>
+                    <p className="font-semibold text-red-400">-{extInfo.totalBurned.toFixed(2)} VAULT</p>
+                  </div>
+                  <div>
+                    <p className="text-neutral-500 text-xs">You Receive</p>
+                    <p className="font-semibold text-white">{(vaultLocked - extInfo.totalBurned).toFixed(2)} VAULT</p>
+                  </div>
+                </div>
+              )}
 
               {insufficientBalance && (
                 <p className="text-red-400 text-xs mb-3">
@@ -132,4 +160,20 @@ export default function RepayPanel({ data, onSuccess }: Props) {
       )}
     </div>
   );
+}
+
+function formatDuration(seconds: number): string {
+  if (seconds >= 86400) {
+    const days = Math.round(seconds / 86400);
+    return `${days} day${days > 1 ? "s" : ""}`;
+  }
+  if (seconds >= 3600) {
+    const hours = Math.round(seconds / 3600);
+    return `${hours} hour${hours > 1 ? "s" : ""}`;
+  }
+  if (seconds >= 60) {
+    const mins = Math.round(seconds / 60);
+    return `${mins} minute${mins > 1 ? "s" : ""}`;
+  }
+  return `${seconds} second${seconds > 1 ? "s" : ""}`;
 }
