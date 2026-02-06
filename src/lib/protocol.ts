@@ -194,6 +194,66 @@ export async function fetchDashboard(
   };
 }
 
+// Fetch all active loans in the protocol (for Loans page)
+export interface AllLoansData {
+  loans: LoanWithKey[];
+  totalJitosolBorrowed: number;
+  totalVaultLocked: number;
+}
+
+export async function fetchAllLoans(
+  connection: Connection,
+  program: Program
+): Promise<AllLoansData> {
+  const loans: LoanWithKey[] = [];
+  let totalJitosolBorrowed = 0;
+  let totalVaultLocked = 0;
+
+  try {
+    // Fetch all loan accounts in the protocol
+    const loanAccounts = await connection.getProgramAccounts(PROGRAM_ID(), {
+      filters: [
+        { dataSize: 8 + 73 }, // Discriminator (8) + Loan struct size
+      ],
+    });
+
+    for (const { pubkey: loanPDA, account } of loanAccounts) {
+      try {
+        const loanData = program.coder.accounts.decode("loan", account.data) as unknown as LoanData;
+
+        // Auto-discover escrow
+        let escrowPk: PublicKey | null = null;
+        try {
+          const escrowAccounts = await connection.getTokenAccountsByOwner(loanPDA, {
+            mint: VAULT_MINT(),
+          });
+          if (escrowAccounts.value.length > 0) {
+            escrowPk = escrowAccounts.value[0].pubkey;
+          }
+        } catch {}
+
+        loans.push({ loan: loanData, loanPDA, escrowPk });
+
+        totalJitosolBorrowed += Number(loanData.jitosolBorrowed) / 10 ** RESERVE_DECIMALS;
+        totalVaultLocked += Number(loanData.vaultLocked) / 10 ** VAULT_DECIMALS;
+      } catch {
+        // Skip malformed accounts
+      }
+    }
+
+    // Sort by JitoSOL borrowed (biggest first)
+    loans.sort((a, b) => Number(b.loan.jitosolBorrowed) - Number(a.loan.jitosolBorrowed));
+  } catch {
+    // If fetch fails, return empty
+  }
+
+  return {
+    loans,
+    totalJitosolBorrowed,
+    totalVaultLocked,
+  };
+}
+
 // ============================================================
 // INSTRUCTIONS
 // ============================================================
