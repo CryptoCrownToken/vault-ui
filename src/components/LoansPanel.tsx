@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useConnection } from "@solana/wallet-adapter-react";
 import { AnchorProvider } from "@coral-xyz/anchor";
 import {
@@ -8,6 +8,7 @@ import {
   getProgram,
   getLoanExtensionInfo,
   AllLoansData,
+  LoanWithKey,
 } from "@/lib/protocol";
 import { solscanAccount } from "@/lib/constants";
 
@@ -19,11 +20,14 @@ interface Props {
 
 const LOANS_PER_PAGE = 10;
 
+type SortMode = "amount" | "due";
+
 export default function LoansPanel({ jitosolUsd, loanDuration, penaltyRate }: Props) {
   const { connection } = useConnection();
   const [data, setData] = useState<AllLoansData | null>(null);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
+  const [sortMode, setSortMode] = useState<SortMode>("amount");
 
   const fetchData = useCallback(async () => {
     try {
@@ -53,16 +57,37 @@ export default function LoansPanel({ jitosolUsd, loanDuration, penaltyRate }: Pr
     return () => clearInterval(iv);
   }, [fetchData]);
 
-  const totalPages = data ? Math.ceil(data.loans.length / LOANS_PER_PAGE) : 0;
+  // Sort loans based on selected mode
+  const sortedLoans = useMemo(() => {
+    if (!data) return [];
+    const loans = [...data.loans];
+
+    if (sortMode === "amount") {
+      // Sort by JitoSOL borrowed (biggest first)
+      loans.sort((a, b) => Number(b.loan.jitosolBorrowed) - Number(a.loan.jitosolBorrowed));
+    } else {
+      // Sort by due time (soonest first, overdue at top)
+      loans.sort((a, b) => Number(a.loan.dueTime) - Number(b.loan.dueTime));
+    }
+
+    return loans;
+  }, [data, sortMode]);
+
+  // Reset page when sort changes
+  useEffect(() => {
+    setPage(0);
+  }, [sortMode]);
+
+  const totalPages = sortedLoans.length > 0 ? Math.ceil(sortedLoans.length / LOANS_PER_PAGE) : 0;
   const startIdx = page * LOANS_PER_PAGE;
   const endIdx = startIdx + LOANS_PER_PAGE;
-  const currentLoans = data?.loans.slice(startIdx, endIdx) || [];
+  const currentLoans = sortedLoans.slice(startIdx, endIdx);
 
   return (
     <div>
       <h2 className="text-lg font-semibold mb-1">Protocol Loans</h2>
       <p className="text-neutral-500 text-sm mb-6">
-        View all active loans in the protocol, sorted by amount borrowed.
+        View all active loans in the protocol.
       </p>
 
       {/* Total Stats */}
@@ -91,6 +116,33 @@ export default function LoansPanel({ jitosolUsd, loanDuration, penaltyRate }: Pr
         </div>
       </div>
 
+      {/* Sort Toggle */}
+      {data && data.loans.length > 0 && (
+        <div className="flex items-center gap-2 mb-4">
+          <span className="text-neutral-500 text-xs">Sort by:</span>
+          <button
+            onClick={() => setSortMode("amount")}
+            className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
+              sortMode === "amount"
+                ? "bg-white text-black"
+                : "border border-white/10 text-neutral-400 hover:text-white hover:border-white/25"
+            }`}
+          >
+            Biggest amount
+          </button>
+          <button
+            onClick={() => setSortMode("due")}
+            className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
+              sortMode === "due"
+                ? "bg-white text-black"
+                : "border border-white/10 text-neutral-400 hover:text-white hover:border-white/25"
+            }`}
+          >
+            Due soonest
+          </button>
+        </div>
+      )}
+
       {/* Loans List */}
       {loading && !data ? (
         <div className="text-center py-8 text-neutral-500">Loading loans...</div>
@@ -107,6 +159,12 @@ export default function LoansPanel({ jitosolUsd, loanDuration, penaltyRate }: Pr
               const vaultLocked = Number(loanEntry.loan.vaultLocked) / 10 ** 6;
               const jitosolBorrowed = Number(loanEntry.loan.jitosolBorrowed) / 10 ** 9;
               const borrowerShort = loanEntry.loan.borrower.toBase58().slice(0, 4) + "..." + loanEntry.loan.borrower.toBase58().slice(-4);
+
+              // Calculate time remaining or overdue
+              const timeRemaining = dueTime - now;
+              const timeText = isOverdue
+                ? null
+                : formatTimeRemaining(timeRemaining);
 
               return (
                 <a
@@ -139,9 +197,14 @@ export default function LoansPanel({ jitosolUsd, loanDuration, penaltyRate }: Pr
                       {isOverdue ? (
                         <span className="text-red-400 text-xs font-medium">OVERDUE</span>
                       ) : (
-                        <span className="text-neutral-500 text-xs">
-                          Due {new Date(dueTime * 1000).toLocaleDateString()}
-                        </span>
+                        <div>
+                          <span className="text-neutral-500 text-xs block">
+                            {timeText}
+                          </span>
+                          <span className="text-neutral-600 text-[10px]">
+                            {new Date(dueTime * 1000).toLocaleDateString()}
+                          </span>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -188,4 +251,23 @@ function formatNum(n: number): string {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(2) + "M";
   if (n >= 1_000) return (n / 1_000).toFixed(2) + "K";
   return n.toFixed(2);
+}
+
+function formatTimeRemaining(seconds: number): string {
+  if (seconds <= 0) return "Due now";
+
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+
+  if (days > 0) {
+    return `${days}d ${hours}h left`;
+  }
+  if (hours > 0) {
+    return `${hours}h ${mins}m left`;
+  }
+  if (mins > 0) {
+    return `${mins}m left`;
+  }
+  return `${Math.floor(seconds)}s left`;
 }
