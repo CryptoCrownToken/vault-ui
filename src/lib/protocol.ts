@@ -138,13 +138,26 @@ export async function fetchDashboard(
       userReserveBalance = Number(acc.amount) / 10 ** RESERVE_DECIMALS;
     } catch {}
 
-    // Scan all possible loan PDAs for this user
-    for (let i = 0; i < loanCount; i++) {
-      try {
-        const loanPDA = getLoanPDA(userPk, i);
-        const loanData = (await (program.account as any).loan.fetch(loanPDA)) as unknown as LoanData;
+    // Fetch all loans for this user in a single RPC call using getProgramAccounts
+    // This is O(1) instead of O(loanCount) RPC calls
+    try {
+      const loanAccounts = await connection.getProgramAccounts(PROGRAM_ID(), {
+        filters: [
+          { dataSize: 8 + 73 }, // Discriminator (8) + Loan struct size
+          {
+            memcmp: {
+              offset: 8, // Skip discriminator, borrower is first field
+              bytes: userPk.toBase58(),
+            },
+          },
+        ],
+      });
 
-        if (loanData && loanData.borrower.equals(userPk)) {
+      // Process each loan account
+      for (const { pubkey: loanPDA, account } of loanAccounts) {
+        try {
+          const loanData = program.coder.accounts.decode("loan", account.data) as unknown as LoanData;
+
           // Auto-discover escrow
           let escrowPk: PublicKey | null = null;
           try {
@@ -157,10 +170,12 @@ export async function fetchDashboard(
           } catch {}
 
           loans.push({ loan: loanData, loanPDA, escrowPk });
+        } catch {
+          // Skip malformed accounts
         }
-      } catch {
-        // Loan closed (repaid) — skip
       }
+    } catch {
+      // Fallback: if getProgramAccounts fails, continue without loans
     }
   }
 
