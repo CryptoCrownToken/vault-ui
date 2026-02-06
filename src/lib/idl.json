@@ -1170,9 +1170,112 @@
       "args": []
     },
     {
+      "name": "liquidate",
+      "docs": [
+        "Liquidate: anyone can close a loan that has reached 100% penalty",
+        "Burns all VAULT, closes accounts, liquidator gets rent as reward"
+      ],
+      "discriminator": [
+        223,
+        179,
+        226,
+        125,
+        48,
+        46,
+        39,
+        74
+      ],
+      "accounts": [
+        {
+          "name": "state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "state.reserve_mint",
+                "account": "State"
+              },
+              {
+                "kind": "account",
+                "path": "state.vault_mint",
+                "account": "State"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault_mint",
+          "writable": true,
+          "relations": [
+            "state"
+          ]
+        },
+        {
+          "name": "liquidator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "loan",
+          "docs": [
+            "Loan account - closed on liquidation, rent goes to liquidator"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  97,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "loan.borrower",
+                "account": "Loan"
+              },
+              {
+                "kind": "account",
+                "path": "loan.loan_id",
+                "account": "Loan"
+              }
+            ]
+          }
+        },
+        {
+          "name": "loan_vault_escrow",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "repay",
       "docs": [
-        "Repay: rembourse JitoSOL → récupère VAULT lockés (moins penalty si overdue)"
+        "Repay: rembourse JitoSOL → récupère VAULT lockés (moins penalty si overdue)",
+        "Supports partial repay - if amount is None or 0, repays full amount"
       ],
       "discriminator": [
         234,
@@ -1503,6 +1606,9 @@
         },
         {
           "name": "loan",
+          "docs": [
+            "Loan account - closed only on full repay (handled in instruction)"
+          ],
           "writable": true,
           "pda": {
             "seeds": [
@@ -1547,7 +1653,14 @@
           "address": "11111111111111111111111111111111"
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "repay_amount",
+          "type": {
+            "option": "u64"
+          }
+        }
+      ]
     },
     {
       "name": "update_params",
@@ -1657,6 +1770,19 @@
       ]
     },
     {
+      "name": "LoanLiquidated",
+      "discriminator": [
+        1,
+        29,
+        28,
+        96,
+        66,
+        95,
+        8,
+        204
+      ]
+    },
+    {
       "name": "LoanRepaid",
       "discriminator": [
         202,
@@ -1751,6 +1877,16 @@
       "code": 6010,
       "name": "NotAdmin",
       "msg": "Not the admin"
+    },
+    {
+      "code": 6011,
+      "name": "LoanNotOverdue",
+      "msg": "Loan is not overdue"
+    },
+    {
+      "code": 6012,
+      "name": "LoanNotLiquidatable",
+      "msg": "Loan has not reached 100% penalty yet"
     }
   ],
   "types": [
@@ -1814,6 +1950,30 @@
           {
             "name": "due_time",
             "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "LoanLiquidated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "borrower",
+            "type": "pubkey"
+          },
+          {
+            "name": "loan_id",
+            "type": "u64"
+          },
+          {
+            "name": "vault_burned",
+            "type": "u64"
+          },
+          {
+            "name": "liquidator",
+            "type": "pubkey"
           }
         ]
       }
