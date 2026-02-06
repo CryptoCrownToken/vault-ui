@@ -1,16 +1,18 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useConnection } from "@solana/wallet-adapter-react";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { AnchorProvider } from "@coral-xyz/anchor";
 import {
   fetchAllLoans,
   getProgram,
   getLoanExtensionInfo,
+  canLiquidate,
+  liquidate,
   AllLoansData,
   LoanWithKey,
 } from "@/lib/protocol";
-import { solscanAccount } from "@/lib/constants";
+import { solscanAccount, solscanTx } from "@/lib/constants";
 
 interface Props {
   jitosolUsd: number;
@@ -24,10 +26,14 @@ type SortMode = "amount" | "due";
 
 export default function LoansPanel({ jitosolUsd, loanDuration, penaltyRate }: Props) {
   const { connection } = useConnection();
+  const wallet = useWallet();
   const [data, setData] = useState<AllLoansData | null>(null);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [sortMode, setSortMode] = useState<SortMode>("amount");
+  const [liquidating, setLiquidating] = useState<string | null>(null);
+  const [liquidateTx, setLiquidateTx] = useState<string | null>(null);
+  const [liquidateError, setLiquidateError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -82,6 +88,36 @@ export default function LoansPanel({ jitosolUsd, loanDuration, penaltyRate }: Pr
   const startIdx = page * LOANS_PER_PAGE;
   const endIdx = startIdx + LOANS_PER_PAGE;
   const currentLoans = sortedLoans.slice(startIdx, endIdx);
+
+  const handleLiquidate = async (loanEntry: LoanWithKey, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!wallet.publicKey || !wallet.signTransaction || !loanEntry.escrowPk) return;
+
+    try {
+      setLiquidating(loanEntry.loanPDA.toBase58());
+      setLiquidateError(null);
+      setLiquidateTx(null);
+
+      const provider = new AnchorProvider(connection, wallet as any, { preflightCommitment: "processed", commitment: "processed" });
+      const program = getProgram(provider);
+
+      const sig = await liquidate(
+        program,
+        wallet.publicKey,
+        loanEntry.loanPDA,
+        loanEntry.escrowPk,
+        loanEntry.loan.borrower
+      );
+
+      setLiquidateTx(sig);
+      fetchData(); // Refresh loans list
+    } catch (err: any) {
+      setLiquidateError(err.message || "Liquidation failed");
+    } finally {
+      setLiquidating(null);
+    }
+  };
 
   return (
     <div>
@@ -159,6 +195,8 @@ export default function LoansPanel({ jitosolUsd, loanDuration, penaltyRate }: Pr
               const vaultLocked = Number(loanEntry.loan.vaultLocked) / 10 ** 6;
               const jitosolBorrowed = Number(loanEntry.loan.jitosolBorrowed) / 10 ** 9;
               const borrowerShort = loanEntry.loan.borrower.toBase58().slice(0, 4) + "..." + loanEntry.loan.borrower.toBase58().slice(-4);
+              const isLiquidatable = canLiquidate(loanEntry.loan, loanDuration, penaltyRate);
+              const loanKey = loanEntry.loanPDA.toBase58();
 
               // Calculate time remaining or overdue
               const timeRemaining = dueTime - now;
@@ -167,61 +205,98 @@ export default function LoansPanel({ jitosolUsd, loanDuration, penaltyRate }: Pr
                 : formatTimeRemaining(timeRemaining);
 
               return (
-                <a
-                  key={loanEntry.loanPDA.toBase58()}
-                  href={solscanAccount(loanEntry.loanPDA.toBase58())}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`border rounded-xl p-4 hover:border-white/25 transition-colors cursor-pointer block ${
-                    isOverdue ? "border-red-500/30" : "border-white/10"
+                <div
+                  key={loanKey}
+                  className={`border rounded-xl p-4 transition-colors ${
+                    isLiquidatable ? "border-red-500/50" : isOverdue ? "border-red-500/30" : "border-white/10"
                   }`}
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <span className="text-neutral-500 text-sm font-mono">#{startIdx + idx + 1}</span>
-                      <div>
-                        <p className="text-sm">
-                          <span className="font-semibold">{jitosolBorrowed.toFixed(4)} JitoSOL</span>
-                          {jitosolUsd > 0 && (
-                            <span className="text-neutral-500 ml-2">
-                              (${(jitosolBorrowed * jitosolUsd).toFixed(2)})
+                  <a
+                    href={solscanAccount(loanKey)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block hover:opacity-80 transition-opacity"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <span className="text-neutral-500 text-sm font-mono">#{startIdx + idx + 1}</span>
+                        <div>
+                          <p className="text-sm">
+                            <span className="font-semibold">{jitosolBorrowed.toFixed(4)} JitoSOL</span>
+                            {jitosolUsd > 0 && (
+                              <span className="text-neutral-500 ml-2">
+                                (${(jitosolBorrowed * jitosolUsd).toFixed(2)})
+                              </span>
+                            )}
+                          </p>
+                          <p className="text-xs text-neutral-500">
+                            {formatNum(vaultLocked)} VAULT locked by {borrowerShort}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        {isLiquidatable ? (
+                          <span className="text-red-500 text-xs font-bold">100% PENALTY</span>
+                        ) : isOverdue ? (
+                          <div>
+                            <span className="text-red-400 text-xs font-medium block">OVERDUE</span>
+                            <span className="text-red-400/60 text-[10px]">
+                              Next penalty in {formatTimeRemaining(getTimeToNextPenalty(dueTime, loanDuration))}
                             </span>
-                          )}
-                        </p>
-                        <p className="text-xs text-neutral-500">
-                          {formatNum(vaultLocked)} VAULT locked by {borrowerShort}
-                        </p>
+                          </div>
+                        ) : (
+                          <div>
+                            <span className="text-neutral-500 text-xs block">
+                              {timeText}
+                            </span>
+                            <span className="text-neutral-600 text-[10px]">
+                              {new Date(dueTime * 1000).toLocaleDateString()}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
-                    <div className="text-right">
-                      {isOverdue ? (
-                        <div>
-                          <span className="text-red-400 text-xs font-medium block">OVERDUE</span>
-                          <span className="text-red-400/60 text-[10px]">
-                            Next penalty in {formatTimeRemaining(getTimeToNextPenalty(dueTime, loanDuration))}
-                          </span>
-                        </div>
-                      ) : (
-                        <div>
-                          <span className="text-neutral-500 text-xs block">
-                            {timeText}
-                          </span>
-                          <span className="text-neutral-600 text-[10px]">
-                            {new Date(dueTime * 1000).toLocaleDateString()}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  </a>
                   {isOverdue && extInfo.totalBurned > 0 && (
                     <div className="mt-2 pt-2 border-t border-white/5 text-xs text-red-400">
                       Penalty: {extInfo.totalBurned.toFixed(2)} VAULT ({extInfo.extensions} period{extInfo.extensions > 1 ? "s" : ""})
                     </div>
                   )}
-                </a>
+                  {isLiquidatable && loanEntry.escrowPk && (
+                    <div className="mt-3 pt-3 border-t border-white/5">
+                      <button
+                        onClick={(e) => handleLiquidate(loanEntry, e)}
+                        disabled={!wallet.publicKey || liquidating === loanKey}
+                        className="w-full py-2 rounded-lg text-xs font-medium transition-all bg-red-500/20 text-red-400 hover:bg-red-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {liquidating === loanKey
+                          ? "Liquidating..."
+                          : `Liquidate (earn ~0.005 SOL)`}
+                      </button>
+                      {!wallet.publicKey && (
+                        <p className="text-neutral-500 text-[10px] text-center mt-1">Connect wallet to liquidate</p>
+                      )}
+                    </div>
+                  )}
+                </div>
               );
             })}
           </div>
+
+          {/* Liquidation status */}
+          {liquidateTx && (
+            <div className="mb-4 border border-green-500/20 rounded-xl p-3">
+              <p className="text-green-400 text-sm font-medium">Loan liquidated successfully!</p>
+              <a href={solscanTx(liquidateTx)} target="_blank" rel="noopener noreferrer" className="text-neutral-400 text-xs underline hover:text-white">
+                View on Solscan
+              </a>
+            </div>
+          )}
+          {liquidateError && (
+            <div className="mb-4 border border-red-500/20 rounded-xl p-3">
+              <p className="text-red-400 text-sm">{liquidateError}</p>
+            </div>
+          )}
 
           {/* Pagination */}
           {totalPages > 1 && (

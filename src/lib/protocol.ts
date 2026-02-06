@@ -329,14 +329,20 @@ export async function repay(
   program: Program,
   userPk: PublicKey,
   loanPDA: PublicKey,
-  escrowPk: PublicKey
+  escrowPk: PublicKey,
+  partialAmount?: number // Optional: JitoSOL amount for partial repay (raw decimals)
 ): Promise<string> {
   const statePDA = getStatePDA();
   const userVaultAta = getAssociatedTokenAddressSync(VAULT_MINT(), userPk);
   const userReserveAta = getAssociatedTokenAddressSync(RESERVE_MINT(), userPk);
 
+  // Convert partial amount to BN if provided, otherwise null for full repay
+  const repayAmountArg = partialAmount
+    ? new BN(Math.floor(partialAmount * 10 ** RESERVE_DECIMALS))
+    : null;
+
   const sig = await program.methods
-    .repay()
+    .repay(repayAmountArg)
     .accounts({
       state: statePDA,
       reserveMint: RESERVE_MINT(),
@@ -354,6 +360,49 @@ export async function repay(
     .rpc({ commitment: "processed" });
 
   return sig;
+}
+
+export async function liquidate(
+  program: Program,
+  liquidatorPk: PublicKey,
+  loanPDA: PublicKey,
+  escrowPk: PublicKey,
+  borrowerPk: PublicKey
+): Promise<string> {
+  const statePDA = getStatePDA();
+
+  const sig = await program.methods
+    .liquidate()
+    .accounts({
+      state: statePDA,
+      vaultMint: VAULT_MINT(),
+      liquidator: liquidatorPk,
+      loan: loanPDA,
+      loanVaultEscrow: escrowPk,
+      tokenProgram: TOKEN_PROGRAM_ID,
+      systemProgram: SystemProgram.programId,
+    })
+    .rpc({ commitment: "processed" });
+
+  return sig;
+}
+
+// Check if a loan can be liquidated (100% penalty reached)
+export function canLiquidate(
+  loan: LoanData,
+  loanDuration: number,
+  penaltyRate: number
+): boolean {
+  const dueTime = Number(loan.dueTime);
+  const vaultLocked = Number(loan.vaultLocked);
+  const now = Date.now() / 1000;
+
+  if (now <= dueTime || loanDuration <= 0) return false;
+
+  const periodsOverdue = Math.floor((now - dueTime) / loanDuration) + 1;
+  const penalty = (vaultLocked * penaltyRate * periodsOverdue) / 10000;
+
+  return penalty >= vaultLocked;
 }
 
 export async function depositReserve(

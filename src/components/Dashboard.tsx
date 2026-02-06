@@ -17,6 +17,7 @@ import BurnPanel from "./BurnPanel";
 import BorrowPanel from "./BorrowPanel";
 import RepayPanel from "./RepayPanel";
 import DepositPanel from "./DepositPanel";
+import { ThemeToggle } from "./ThemeProvider";
 
 export default function Dashboard() {
   const { connection } = useConnection();
@@ -73,18 +74,21 @@ export default function Dashboard() {
   const floorUsd = data ? data.floorPriceJitosol * jitosolUsd : 0;
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen" style={{ background: "var(--background)", color: "var(--foreground)" }}>
       {/* ── Header ── */}
-      <header className="sticky top-0 z-50 bg-black/80 backdrop-blur-md border-b border-white/5">
+      <header className="sticky top-0 z-50 backdrop-blur-md" style={{ background: "var(--header-bg)", borderBottom: "1px solid var(--border-color)" }}>
         <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img src="/vault-logo.svg" alt="VAULT" className="w-7 h-7" />
             <span className="text-lg font-semibold tracking-tight">VAULT</span>
-            <span className="text-[10px] uppercase tracking-widest text-neutral-500 border border-neutral-800 px-2 py-0.5 rounded-full">
+            <span className="text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-full" style={{ color: "var(--text-muted)", border: "1px solid var(--border-color)" }}>
               {SOLANA_NETWORK}
             </span>
           </div>
-          <WalletMultiButton />
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <WalletMultiButton />
+          </div>
         </div>
       </header>
 
