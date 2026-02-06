@@ -127,7 +127,7 @@ export default function Dashboard() {
           <StatCard
             label="Circulating"
             value={data ? formatNum(data.circulatingSupply) : "..."}
-            sub={data && (data.circulatingSupply + data.totalLocked) > 0 ? `${((data.totalLocked / (data.circulatingSupply + data.totalLocked)) * 100).toFixed(2)}% locked in loans` : ""}
+            sub={data && data.totalLocked > 0 ? `${formatNum(data.totalLocked)} locked in loans` : ""}
           />
         </section>
 
