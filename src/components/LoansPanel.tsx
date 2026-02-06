@@ -195,7 +195,12 @@ export default function LoansPanel({ jitosolUsd, loanDuration, penaltyRate }: Pr
                     </div>
                     <div className="text-right">
                       {isOverdue ? (
-                        <span className="text-red-400 text-xs font-medium">OVERDUE</span>
+                        <div>
+                          <span className="text-red-400 text-xs font-medium block">OVERDUE</span>
+                          <span className="text-red-400/60 text-[10px]">
+                            Next penalty in {formatTimeRemaining(getTimeToNextPenalty(dueTime, loanDuration))}
+                          </span>
+                        </div>
                       ) : (
                         <div>
                           <span className="text-neutral-500 text-xs block">
@@ -254,20 +259,34 @@ function formatNum(n: number): string {
 }
 
 function formatTimeRemaining(seconds: number): string {
-  if (seconds <= 0) return "Due now";
+  if (seconds <= 0) return "now";
 
   const days = Math.floor(seconds / 86400);
   const hours = Math.floor((seconds % 86400) / 3600);
   const mins = Math.floor((seconds % 3600) / 60);
 
   if (days > 0) {
-    return `${days}d ${hours}h left`;
+    return `${days}d ${hours}h`;
   }
   if (hours > 0) {
-    return `${hours}h ${mins}m left`;
+    return `${hours}h ${mins}m`;
   }
   if (mins > 0) {
-    return `${mins}m left`;
+    return `${mins}m`;
   }
-  return `${Math.floor(seconds)}s left`;
+  return `${Math.floor(seconds)}s`;
+}
+
+function getTimeToNextPenalty(dueTime: number, loanDuration: number): number {
+  const now = Date.now() / 1000;
+  if (now <= dueTime || loanDuration <= 0) return 0;
+
+  // Time since due
+  const timeSinceDue = now - dueTime;
+  // Current period (how many full periods have passed)
+  const currentPeriod = Math.floor(timeSinceDue / loanDuration);
+  // Time when next period starts
+  const nextPeriodStart = dueTime + (currentPeriod + 1) * loanDuration;
+  // Time until next period
+  return nextPeriodStart - now;
 }
