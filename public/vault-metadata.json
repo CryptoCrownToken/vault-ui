@@ -1,0 +1,8 @@
+{
+  "name": "Vault",
+  "symbol": "VAULT",
+  "description": "VAULT token - A floor-price backed token on Solana",
+  "image": "https://vault-ui-pi.vercel.app/vault-logo.png",
+  "external_url": "https://vault-ui-pi.vercel.app",
+  "attributes": []
+}
