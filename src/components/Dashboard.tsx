@@ -17,7 +17,6 @@ import BurnPanel from "./BurnPanel";
 import BorrowPanel from "./BorrowPanel";
 import RepayPanel from "./RepayPanel";
 import DepositPanel from "./DepositPanel";
-import AdminPanel from "./AdminPanel";
 
 export default function Dashboard() {
   const { connection } = useConnection();
@@ -27,7 +26,7 @@ export default function Dashboard() {
   const [jitosolUsd, setJitosolUsd] = useState<number>(0);
   const [apy, setApy] = useState<number>(0);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"loans" | "burn" | "borrow" | "repay" | "deposit" | "admin">("loans");
+  const [tab, setTab] = useState<"loans" | "burn" | "borrow" | "repay" | "deposit">("loans");
 
   useEffect(() => {
     fetch("/api/price")
@@ -256,8 +255,8 @@ export default function Dashboard() {
 
             {/* Action Tabs */}
             <section className="mb-16">
-              <div className="grid grid-cols-6 border-b border-white/10 mb-8">
-                {(["loans", "burn", "borrow", "repay", "deposit", "admin"] as const).map((t) => (
+              <div className="grid grid-cols-5 border-b border-white/10 mb-8">
+                {(["loans", "burn", "borrow", "repay", "deposit"] as const).map((t) => (
                   <button
                     key={t}
                     onClick={() => setTab(t)}
@@ -267,7 +266,7 @@ export default function Dashboard() {
                         : "text-neutral-500 hover:text-neutral-300"
                     }`}
                   >
-                    {t === "loans" ? "Loans" : t === "burn" ? "Burn" : t === "borrow" ? "Borrow" : t === "repay" ? "Repay" : t === "deposit" ? "Deposit" : "Admin"}
+                    {t === "loans" ? "Loans" : t === "burn" ? "Burn" : t === "borrow" ? "Borrow" : t === "repay" ? "Repay" : "Deposit"}
                     {tab === t && (
                       <span className="absolute bottom-0 left-0 right-0 h-px bg-white" />
                     )}
@@ -281,7 +280,6 @@ export default function Dashboard() {
                 {tab === "borrow" && <BorrowPanel data={data} jitosolUsd={jitosolUsd} onSuccess={refresh} />}
                 {tab === "repay" && <RepayPanel data={data} onSuccess={refresh} />}
                 {tab === "deposit" && <DepositPanel data={data} jitosolUsd={jitosolUsd} onSuccess={refresh} />}
-                {tab === "admin" && <AdminPanel />}
               </div>
             </section>
           </>
